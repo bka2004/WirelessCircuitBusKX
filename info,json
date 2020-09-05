@@ -1,0 +1,9 @@
+{
+  "name": "WirelessCircuitBusKX",
+  "version": "0.1.0",
+  "title": "Wireless Circuit Bus",
+  "author": "bka2004",
+  "factorio_version": "0.18",
+  "dependencies": ["base >= 0.18"],
+  "description": "Adds..."
+}
