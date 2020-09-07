@@ -1,3 +1,3 @@
 
-require("bus_node")
+require("bus_node_prototypes")
 
