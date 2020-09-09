@@ -8,10 +8,15 @@ local constants =
   closeButtonPostfix = "CloseButton"
 }
 constants.modGuiButtonName = constants.modPrefix .. "WirelessCircuitBusConfigButton"
-constants.channelSetGuiCloseButtonName = constants.modPrefix .. "ChannelSetGui" .. constants.closeButtonPostfix
+constants.configGuiCloseButtonName = constants.modPrefix .. "ChannelSetGui" .. constants.closeButtonPostfix
+constants.entityGuiCloseButtonName = constants.modPrefix .. "EntityGui" .. constants.closeButtonPostfix
+constants.entityGuiOkButtonName = constants.modPrefix .. "EntityGuiOkButton"
 constants.configGui = constants.modPrefix .. "ConfigtGui"
+constants.entityGui = constants.modPrefix .. "EntityGui"
 constants.channelSetDropDown = constants.modPrefix .. "ChannelSetDropDown"
 constants.chooseChannelSetDropDown = constants.modPrefix .. "ChooseChannelSetDropDown"
+constants.busOfEntityDropdown = constants.modPrefix .. "BusOfEntityDropDown"
+constants.channelOfEntityDropdown = constants.modPrefix .. "ChannelOfEntityDropDown"
 constants.channelSetCreateButtonName = constants.modPrefix .. "ChannelSetCreateButton"
 constants.channelAddButtonName = constants.modPrefix .. "ChannelAddButton"
 constants.busAddButtonName = constants.modPrefix .. "BusAddButton"
@@ -24,6 +29,8 @@ constants.moveChannelUpButtonName = constants.modPrefix .. "MoveChannelUpButton"
 constants.moveChannelDownButtonName = constants.modPrefix .. "MoveChannelDownButton"
 constants.newChannelTextfieldName = constants.modPrefix .. "NewChannelTextfield"
 constants.newBusTextfieldName = constants.modPrefix .. "NewBusTextfield"
+constants.sendCheckbox = constants.modPrefix .. "SendCheckbox"
+constants.receiveCheckbox = constants.modPrefix .. "ReceiveCheckbox"
 
 
 
@@ -87,7 +94,15 @@ local function AddTitleBarToConfigGui(parent, dragTarget)
   local flow = parent.add{type = "flow", direction = "horizontal"}
   flow.add{type = "label", caption = {"ConfigGui.Title"}, style = "frame_title"}
   flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
-  flow.add{type = "sprite-button", name = constants.channelSetGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
+  flow.add{type = "sprite-button", name = constants.configGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
+end
+
+
+local function AddTitleBarToEntityGui(parent, dragTarget)
+  local flow = parent.add{type = "flow", direction = "horizontal"}
+  flow.add{type = "label", caption = {"EntityGui.Title"}, style = "frame_title"}
+  flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
+  flow.add{type = "sprite-button", name = constants.entityGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
 end
 
 
@@ -202,6 +217,51 @@ local function OnTick(event)
 end
 
 
+local function AddBusAndChannelSelectorToEntityGui(parent)
+  local flow = parent.add{type = "flow", direction = "horizontal"}
+  flow.add{type = "label", caption = {"EntityGui.BusLabel"}}
+  flow.add{type = "drop-down", name = constants.busOfEntityDropdown, items = BussesAsLocalizedStringList(persistedModData.busses)}
+  flow.add{type = "label", caption = {"EntityGui.ChannelLabel"}}
+  flow.add{type = "drop-down", name = constants.channelOfEntityDropdown, items = {}}
+end
+
+
+local function AddSendReceiveSelectorToEntityGui(parent)
+
+  local flow = parent.add{type = "flow", direction = "horizontal"}
+  flow.add{type = "checkbox", name = constants.sendCheckbox, state = true}
+  flow.add{type = "label", caption = {"EntityGui.SendLabel"}}
+
+  local flow = parent.add{type = "flow", direction = "horizontal"}
+  flow.add{type = "checkbox", name = constants.receiveCheckbox, state = true}
+  flow.add{type = "label", caption = {"EntityGui.ReceiveLabel"}}
+
+end
+
+
+local function AddOkButtonToEntityGui(parent)
+
+  local flow = parent.add{type = "flow", direction = "horizontal"}
+  volatileModData.guiElements[constants.entityGuiOkButtonName] = flow.add{type = "button", name = constants.entityGuiOkButtonName, caption = {"EntityGui.Ok"}}
+
+end
+
+
+local function ShowBusNodeGui(player)
+
+  local frame = player.gui.screen.add{type = "frame", name = constants.entityGui, direction = "vertical"}
+  volatileModData.guiElements[constants.entityGui] = frame
+  local verticalFlow = frame.add{type = "flow", direction = "vertical"}
+  AddTitleBarToEntityGui(verticalFlow, frame)
+
+  AddBusAndChannelSelectorToEntityGui(verticalFlow)
+  AddSendReceiveSelectorToEntityGui(verticalFlow)
+  AddOkButtonToEntityGui(verticalFlow)
+
+  player.opened = frame
+end
+
+
 local function OnGuiOpened(event)
 
   if (event.gui_type ~= defines.gui_type.entity) then
@@ -216,7 +276,7 @@ local function OnGuiOpened(event)
 
   local player = game.players[event.player_index]
 
-  showBusNodeGuid(player)
+  ShowBusNodeGui(player)
 
 end
 
@@ -243,7 +303,16 @@ local function HandleCloseButton(event)
     return false
   end
 
-  local frame = event.element.parent.parent.parent
+  local frame
+  if (event.element.name == constants.entityGuiCloseButtonName) then
+    frame = volatileModData.guiElements[constants.entityGui]
+  elseif (event.element.name == constants.configGuiCloseButtonName) then
+    frame = volatileModData.guiElements[constants.configGui]
+  end
+
+  if (frame == nil) then
+    return true
+  end
 
   volatileModData.guiElements = {}
   frame.destroy()
@@ -308,7 +377,7 @@ local function HandleBusAddButton(event)
   end
 
   local channelSetName = channelSetDropDown.get_item(selectedIndex)[2]
-  persistedModData.busses[busName] = { name = busName, channelSet = channelSetName }
+  persistedModData.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
   busTextfield.text = ""
 
   local busList = volatileModData.guiElements[constants.busListBoxName]
