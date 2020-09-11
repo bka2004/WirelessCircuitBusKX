@@ -1,6 +1,9 @@
 require "mod-gui"
 local ChannelSet = require "channel_set"
 local BusNode = require "bus_node"
+local Tools = require "tools"
+local ConfigGui = require "config_gui"
+
 
 local constants =
 {
@@ -31,6 +34,8 @@ constants.newChannelTextfieldName = constants.modPrefix .. "NewChannelTextfield"
 constants.newBusTextfieldName = constants.modPrefix .. "NewBusTextfield"
 constants.sendCheckbox = constants.modPrefix .. "SendCheckbox"
 constants.receiveCheckbox = constants.modPrefix .. "ReceiveCheckbox"
+constants.bussesTab = constants.modPrefix .. "BussesTab"
+
 
 
 
@@ -45,43 +50,22 @@ end
 local persistedModData =
 {
   channelSets = {},
-  busses = {}
+  busses = {},
+  nodes = {}
 }
 
 local volatileModData =
 {
-  guiElements = {}
+  guiElements = {},
+  editedEntity = nil
 }
 
 
-local ChannelSetsAsLocalizedStringList = function(channelSets)
-  local localizeStringList = {}
-  for name,_ in pairs(channelSets) do
-    localizeStringList[#localizeStringList + 1] = {"", name}
-  end
-
-  return localizeStringList
-end
+local tools = Tools()
+local configGui = ConfigGui(constants, persistedModData, volatileModData)
 
 
-local ChannelsAsLocalizedStringList = function(channels)
-  local localizeStringList = {}
-  for _, name in pairs(channels) do
-    localizeStringList[#localizeStringList + 1] = {"", name}
-  end
 
-  return localizeStringList
-end
-
-
-local BussesAsLocalizedStringList = function(busses)
-  local localizeStringList = {}
-  for name, bus in pairs(busses) do
-    localizeStringList[#localizeStringList + 1] = {"", name .. " - " .. persistedModData.channelSets[bus.channelSet].name}
-  end
-
-  return localizeStringList
-end
 
 
 local function PlayerGuiInit (player)
@@ -90,101 +74,11 @@ local function PlayerGuiInit (player)
 end
 
 
-local function AddTitleBarToConfigGui(parent, dragTarget)
-  local flow = parent.add{type = "flow", direction = "horizontal"}
-  flow.add{type = "label", caption = {"ConfigGui.Title"}, style = "frame_title"}
-  flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
-  flow.add{type = "sprite-button", name = constants.configGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
-end
-
-
 local function AddTitleBarToEntityGui(parent, dragTarget)
   local flow = parent.add{type = "flow", direction = "horizontal"}
   flow.add{type = "label", caption = {"EntityGui.Title"}, style = "frame_title"}
   flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
   flow.add{type = "sprite-button", name = constants.entityGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
-end
-
-
-local function AddChannelSetSelectorToChannelSetGui(parent)
-  local flow = parent.add{type = "flow", direction = "horizontal"}
-  flow.add{type = "label", caption = {"ConfigGui.Label"}}
-  volatileModData.guiElements[constants.channelSetDropDown] = flow.add{type = "drop-down", name = constants.channelSetDropDown, items = ChannelSetsAsLocalizedStringList(persistedModData.channelSets)}
-  flow.add{type = "textfield", name = constants.channelSetCreateTextfield}
-  flow.add{type = "button", name = constants.channelSetCreateButtonName, caption = {"ConfigGui.Create"}}
-end
-
-
-local function AddChannelSelectorToChannelSetGui(parent)
-  local flow = parent.add{type = "flow", direction = "horizontal"}
-  flow.add{type = "label", caption = {"ConfigGui.Channels"}}
-  volatileModData.guiElements[constants.newChannelTextfieldName] = flow.add{type = "textfield", name = constants.newChannelTextfieldName}
-  volatileModData.guiElements[constants.channelAddButtonName] = flow.add{type = "button", name = constants.channelAddButtonName, caption = {"ConfigGui.Add"}}
-end
-
-
-local function AddChannelListToChannelSetGui(parent)
-  local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-  volatileModData.guiElements[constants.channelListBoxName] = outerFlow.add{type = "list-box", name = constants.channelListBoxName, items = {}}
-  local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
-  innerFlow.add{type = "button", name = constants.removeChannelButtonName, caption = {"ConfigGui.Remove"}}
-  innerFlow.add{type = "button", name = constants.moveChannelUpButtonName, caption = {"ConfigGui.Up"}}
-  innerFlow.add{type = "button", name = constants.moveChannelDownButtonName, caption = {"ConfigGui.Down"}}
-end
-
-
-local function AddChannelSetGui(parent)
-  
-  AddChannelSetSelectorToChannelSetGui(parent)
-  AddChannelSelectorToChannelSetGui(parent)
-  AddChannelListToChannelSetGui(parent)
-end
-
-
-local function AddBusSelectorToBussesGui(parent)
-  local flow = parent.add{type = "flow", direction = "horizontal"}
-  flow.add{type = "label", caption = {"ConfigGui.BusNameLabel"}}
-  volatileModData.guiElements[constants.newBusTextfieldName] = flow.add{type = "textfield", name = constants.newBusTextfieldName}
-  flow.add{type = "label", caption = {"ConfigGui.ChannelSetLabel"}}
-  volatileModData.guiElements[constants.chooseChannelSetDropDown] = flow.add{type = "drop-down", name = constants.chooseChannelSetDropDown, items = ChannelSetsAsLocalizedStringList(persistedModData.channelSets)}
-  volatileModData.guiElements[constants.busAddButtonName] = flow.add{type = "button", name = constants.busAddButtonName, caption = {"ConfigGui.Add"}}
-end
-
-
-local function AddBusListToBussesGui(parent)
-  local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-  volatileModData.guiElements[constants.busListBoxName] = outerFlow.add{type = "list-box", name = constants.busListBoxName, items = BussesAsLocalizedStringList(persistedModData.busses)}
-  local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
-  innerFlow.add{type = "button", name = constants.removeChannelButtonName, caption = {"ConfigGui.Remove"}}
-end
-
-
-local function AddBussesGui(parent)
-  
-  AddBusSelectorToBussesGui(parent)
-  AddBusListToBussesGui(parent)
-end
-
-
-local function ShowConfigGui(player)
-  
-  local frame = player.gui.screen.add{type = "frame", name = constants.configGui, direction = "vertical"}
-  volatileModData.guiElements[constants.configGui] = frame
-  local verticalFlow = frame.add{type = "flow", direction = "vertical"}
-  AddTitleBarToConfigGui(verticalFlow, frame)
-  
-  local tabPane = verticalFlow.add{type = "tabbed-pane"}
-  local bussesTab = tabPane.add{type = "tab", caption={"ConfigGui.BussesTab"}}
-  local bussesFlow = tabPane.add{type = "flow", direction = "vertical"}
-  AddBussesGui(bussesFlow)
-  tabPane.add_tab(bussesTab, bussesFlow)
-  
-  local channelSetTab = tabPane.add{type = "tab", caption={"ConfigGui.ChannelSetTab"}}
-  local channelSetFlow = tabPane.add{type = "flow", direction = "vertical"}
-  AddChannelSetGui(channelSetFlow)
-  tabPane.add_tab(channelSetTab, channelSetFlow)
-
-  player.opened = frame
 end
 
 
@@ -220,7 +114,7 @@ end
 local function AddBusAndChannelSelectorToEntityGui(parent)
   local flow = parent.add{type = "flow", direction = "horizontal"}
   flow.add{type = "label", caption = {"EntityGui.BusLabel"}}
-  flow.add{type = "drop-down", name = constants.busOfEntityDropdown, items = BussesAsLocalizedStringList(persistedModData.busses)}
+  volatileModData.guiElements[constants.busOfEntityDropdown] = flow.add{type = "drop-down", name = constants.busOfEntityDropdown, items = tools.BussesAsLocalizedStringList(persistedModData.busses)}
   flow.add{type = "label", caption = {"EntityGui.ChannelLabel"}}
   flow.add{type = "drop-down", name = constants.channelOfEntityDropdown, items = {}}
 end
@@ -274,6 +168,8 @@ local function OnGuiOpened(event)
     return
   end
 
+  volatileModData.editedEntity = clickedEntity
+
   local player = game.players[event.player_index]
 
   ShowBusNodeGui(player)
@@ -288,7 +184,7 @@ local function HandleModGuiButton(event)
 
   local player = game.players[event.player_index]
 
-  ShowConfigGui(player)
+  configGui.Show(player)
 
   return true
 end
@@ -306,6 +202,7 @@ local function HandleCloseButton(event)
   local frame
   if (event.element.name == constants.entityGuiCloseButtonName) then
     frame = volatileModData.guiElements[constants.entityGui]
+    volatileModData.editedEntity = nil
   elseif (event.element.name == constants.configGuiCloseButtonName) then
     frame = volatileModData.guiElements[constants.configGui]
   end
@@ -321,67 +218,26 @@ local function HandleCloseButton(event)
 end
 
 
-local function HandleChannelSetCreateButton(event)
-  if (event.element.name ~= constants.channelSetCreateButtonName) then
+local function HandleEntityOkButton(event)
+  if (event.element.name ~= constants.entityGuiOkButtonName) then
     return false
   end
 
-  local textfield = event.element.parent[constants.channelSetCreateTextfield]
-  local newChannelSetName = textfield.text
-  persistedModData.channelSets[newChannelSetName] = ChannelSet(newChannelSetName)
+  local uniqueEntityId = volatileModData.editedEntity.unit_number
+  local busNode = persistedModData.nodes[uniqueEntityId]
 
-  textfield.text = ""
-
-  local dropdown = event.element.parent[constants.channelSetDropDown]
-  dropdown.items = ChannelSetsAsLocalizedStringList(persistedModData.channelSets)
-  dropdown.selected_index = #dropdown.items
-
-  return true
-end
-
-
-local function HandleChannelAddButton(event)
-  if (event.element.name ~= constants.channelAddButtonName) then
-    return false
+  local busDropdown = volatileModData.guiElements[constants.busOfEntityDropdown]
+  local selectedBusIndex = busDropdown.selected_index
+  if (selectedBusIndex == 0) then
+    if (busNode.bus ~= nil) then
+      busNode.bus.nodes[uniqueEntityId] = nil
+      busNode.bus = nil
+    end
+  else
+    local selectedBus = persistedModData.busses[busDropdown.items[selectedBusIndex][2]]
+    busNode.bus = selectedBus
+    selectedBus.nodes[uniqueEntityId] = busNode
   end
-
-  local channelTextfield = volatileModData.guiElements[constants.newChannelTextfieldName]
-  local channelSetDropDown = volatileModData.guiElements[constants.channelSetDropDown]
-  local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)[2]
-  local channelsOfSelectedChannelSet = persistedModData.channelSets[channelSetName].channels
-  table.insert(channelsOfSelectedChannelSet, channelTextfield.text)
-  channelTextfield.text = ""
-
-  local channelList = volatileModData.guiElements[constants.channelListBoxName]
-  channelList.items = ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
-
-  return true
-end
-
-
-local function HandleBusAddButton(event)
-  if (event.element.name ~= constants.busAddButtonName) then
-    return false
-  end
-
-  local busTextfield = volatileModData.guiElements[constants.newBusTextfieldName]
-  local busName = busTextfield.text
-  if (busName:len() == 0) then
-    return true
-  end
-
-  local channelSetDropDown = volatileModData.guiElements[constants.chooseChannelSetDropDown]
-  local selectedIndex = channelSetDropDown.selected_index
-  if (selectedIndex == 0) then
-    return true
-  end
-
-  local channelSetName = channelSetDropDown.get_item(selectedIndex)[2]
-  persistedModData.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
-  busTextfield.text = ""
-
-  local busList = volatileModData.guiElements[constants.busListBoxName]
-  busList.items = BussesAsLocalizedStringList(persistedModData.busses)
 
   return true
 end
@@ -389,21 +245,11 @@ end
 
 local function OnGuiClick(event)
 
-  local handled = false
+  tools.CallEventHandler(event, {
+    HandleModGuiButton,
+    configGui.HandleOnGuiClick
+  })
 
-  for _,handleFunction  in pairs(
-    {
-      HandleModGuiButton,
-      HandleCloseButton,
-      HandleChannelSetCreateButton,
-      HandleChannelAddButton,
-      HandleBusAddButton
-    }) do
-      if (not handled) then
-        handled = handleFunction(event)
-      end
-
-  end
 end
 
 
@@ -417,7 +263,7 @@ local function HandleChannelSetDropDownChanged(event)
   local channelsOfSelectedChannelSet = persistedModData.channelSets[channelSetName].channels
 
   local channelList = volatileModData.guiElements[constants.channelListBoxName]
-  channelList.items = ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
+  channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
 
   return true
 end
@@ -439,6 +285,20 @@ local function OnGuiSelectionStateChanged(event)
 end
 
 
+local function OnEntityCreated(event)
+
+  local createdEntity = event.created_entity
+
+  if (createdEntity.name ~= "bus-node") then
+    return
+  end
+
+  local uniqueEntityId = createdEntity.unit_number
+  persistedModData.nodes[uniqueEntityId] = { send = true, receive = true }
+
+end
+
+
 script.on_init(OnInit)
 script.on_load(OnLoad)
 script.on_event(defines.events.on_player_created, OnPlayerCreated)
@@ -446,4 +306,6 @@ script.on_event(defines.events.on_tick, OnTick)
 script.on_event(defines.events.on_gui_opened, OnGuiOpened)
 script.on_event(defines.events.on_gui_click, OnGuiClick)
 script.on_event(defines.events.on_gui_selection_state_changed, OnGuiSelectionStateChanged)
+script.on_event(defines.events.on_entity_cloned, OnEntityCreated)
+script.on_event(defines.events.on_built_entity, OnEntityCreated)
 
