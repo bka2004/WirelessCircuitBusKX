@@ -34,7 +34,7 @@ local function BussesGui(constants, persistedModData, volatileModData)
         busTextfield.text = ""
       
         local busList = volatileModData.guiElements[constants.busListBoxName]
-        busList.items = tools.BussesAsLocalizedStringList(persistedModData.busses)
+        busList.items = tools.BussesAsLocalizedStringList(persistedModData.busses, persistedModData.channelSets)
       
         return true
       end
@@ -66,9 +66,17 @@ local function BussesGui(constants, persistedModData, volatileModData)
     end
 
 
-    function HandleOnGuiClick(event)
+    function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
+        })
+
+    end
+
+
+    function self.HandleOnGuiClick(event)
+
+        return tools.CallEventHandler(event, {
             self.HandleBusAddButton
         })
         

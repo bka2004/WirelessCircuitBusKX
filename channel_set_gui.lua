@@ -1,4 +1,6 @@
+local ChannelSet = require "channel_set"
 local Tools = require "tools"
+
 
 local function ChannelSetGui(constants, persistedModData, volatileModData)
     local self =
@@ -39,6 +41,24 @@ local function ChannelSetGui(constants, persistedModData, volatileModData)
         innerFlow.add{type = "button", name = constants.moveChannelDownButtonName, caption = {"ConfigGui.Down"}}
     end
 
+
+    function self.HandleChannelSetDropDownChanged(event)
+
+        if (event.element.name ~= constants.channelSetDropDown) then
+          return false
+        end
+      
+        local channelSetDropDown = event.element
+        local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)[2]
+        local channelsOfSelectedChannelSet = persistedModData.channelSets[channelSetName].channels
+      
+        local channelList = volatileModData.guiElements[constants.channelListBoxName]
+        channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
+      
+        return true
+
+      end
+      
 
     function self.AddChannelSetGui(parent)
   
@@ -84,11 +104,19 @@ local function ChannelSetGui(constants, persistedModData, volatileModData)
       
         return true
       end
+
       
-      
-      function HandleOnGuiClick(event)
+    function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
+            self.HandleChannelSetDropDownChanged
+        })
+
+    end
+
+    function self.HandleOnGuiClick(event)
+
+        return tools.CallEventHandler(event, {
             self.HandleChannelSetCreateButton,
             self.HandleChannelAddButton
         })

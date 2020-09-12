@@ -48,6 +48,22 @@ local function ConfigGui(constants, persistedModData, volatileModData)
       end
 
 
+    function self.HandleCloseButton(event)
+      
+        local frame
+        if (event.element.name ~= constants.configGuiCloseButtonName) then
+            return false
+        end
+
+        local frame = volatileModData.guiElements[constants.configGui]
+      
+        volatileModData.guiElements = {}
+        frame.destroy()
+      
+        return true
+      end
+      
+
       function self.HandleBussesTabActivated(event)
 
         if (event.element.name ~= constants.bussesTab) then
@@ -61,19 +77,26 @@ local function ConfigGui(constants, persistedModData, volatileModData)
       end
       
       
-      
-
-
-      function OnGuiClick(event)
+      function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
-            channelSetGui.HandleOnGuiClick,
-            bussesGui.HandleOnGuiClick,
-            self.HandleBussesTabActivated
+            channelSetGui.HandleOnGuiSelectionStateChanged,
+            bussesGui.HandleOnGuiSelectionStateChanged
         })
 
-      end
-      
+    end
+
+
+    function self.HandleOnGuiClick(event)
+
+        return tools.CallEventHandler(event, {
+            channelSetGui.HandleOnGuiClick,
+            bussesGui.HandleOnGuiClick,
+            self.HandleBussesTabActivated,
+            self.HandleCloseButton
+        })
+
+    end
       
 
     return self

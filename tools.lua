@@ -32,7 +32,12 @@ local function Tools()
     end
 
 
-    function CallEventHandler(event, eventHandler)
+    function self.BusNameFromBusDisplayString(busDisplayString)
+        return busDisplayString:sub(1, busDisplayString:find(" - ") - 1)
+    end
+
+
+    function self.CallEventHandler(event, eventHandler)
 
         local handled = false
       
@@ -41,7 +46,9 @@ local function Tools()
               handled = handleFunction(event)
             end      
         end
-      end
+
+        return handled
+    end
 
 
     return self
