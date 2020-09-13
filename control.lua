@@ -4,37 +4,6 @@ local Tools = require "tools"
 local Gui = require "gui"
 
 
-local constants =
-{
-  modPrefix = "WLCBKX_",
-  closeButtonPostfix = "CloseButton"
-}
-constants.modGuiButtonName = constants.modPrefix .. "WirelessCircuitBusConfigButton"
-constants.configGuiCloseButtonName = constants.modPrefix .. "ChannelSetGui" .. constants.closeButtonPostfix
-constants.entityGuiCloseButtonName = constants.modPrefix .. "EntityGui" .. constants.closeButtonPostfix
-constants.entityGuiOkButtonName = constants.modPrefix .. "EntityGuiOkButton"
-constants.configGui = constants.modPrefix .. "ConfigtGui"
-constants.entityGui = constants.modPrefix .. "EntityGui"
-constants.channelSetDropDown = constants.modPrefix .. "ChannelSetDropDown"
-constants.chooseChannelSetDropDown = constants.modPrefix .. "ChooseChannelSetDropDown"
-constants.busOfEntityDropdown = constants.modPrefix .. "BusOfEntityDropDown"
-constants.channelOfEntityDropdown = constants.modPrefix .. "ChannelOfEntityDropDown"
-constants.channelSetCreateButtonName = constants.modPrefix .. "ChannelSetCreateButton"
-constants.channelAddButtonName = constants.modPrefix .. "ChannelAddButton"
-constants.busAddButtonName = constants.modPrefix .. "BusAddButton"
-constants.channelSetCreateTextfield = constants.modPrefix .. "ChannelSetCreateTextfield"
-constants.channelListBoxName = constants.modPrefix .. "ChannelListBox"
-constants.busListBoxName = constants.modPrefix .. "BusListBox"
-constants.removeChannelButtonName = constants.modPrefix .. "ChannelRemoveButton"
-constants.removeBusButtonName = constants.modPrefix .. "BusRemoveButton"
-constants.moveChannelUpButtonName = constants.modPrefix .. "MoveChannelUpButton"
-constants.moveChannelDownButtonName = constants.modPrefix .. "MoveChannelDownButton"
-constants.newChannelTextfieldName = constants.modPrefix .. "NewChannelTextfield"
-constants.newBusTextfieldName = constants.modPrefix .. "NewBusTextfield"
-constants.sendCheckbox = constants.modPrefix .. "SendCheckbox"
-constants.receiveCheckbox = constants.modPrefix .. "ReceiveCheckbox"
-constants.bussesTab = constants.modPrefix .. "BussesTab"
-
 
 
 
@@ -46,22 +15,59 @@ string.ends_with = function (self, substring)
   return self:sub(-1 * substring:len()) == substring
 end
 
-local persistedModData =
+local modData =
 {
-  channelSets = {},
-  busses = {},
-  nodes = {}
+  constants = 
+  {  
+    modPrefix = "WLCBKX_",
+    guiElementNames = {}
+  },
+  persisted = 
+  {
+    channelSets = {},
+    busses = {},
+    nodes = {}  
+  },
+  volatile = 
+  {
+    guiElements = {},
+    editedEntity = nil
+    }
 }
 
-local volatileModData =
-{
-  guiElements = {},
-  editedEntity = nil
-}
+
+
+modData.constants.guiElementNames["modGuiButton"]  = modData.constants.modPrefix .. "WirelessCircuitBusConfigButton"
+modData.constants.guiElementNames["configGuiCloseButton"] = modData.constants.modPrefix .. "ChannelSetGuiCloseButton"
+modData.constants.guiElementNames["entityGuiCloseButton"] = modData.constants.modPrefix .. "EntityGuiCloseButton"
+modData.constants.guiElementNames["entityGuiOkButton"] = modData.constants.modPrefix .. "EntityGuiOkButton"
+modData.constants.guiElementNames["configGui"] = modData.constants.modPrefix .. "ConfigtGui"
+modData.constants.guiElementNames["entityGui"] = modData.constants.modPrefix .. "EntityGui"
+modData.constants.guiElementNames["channelSetDropDown"] = modData.constants.modPrefix .. "ChannelSetDropDown"
+modData.constants.guiElementNames["chooseChannelSetDropDown"] = modData.constants.modPrefix .. "ChooseChannelSetDropDown"
+modData.constants.guiElementNames["busOfEntityDropdown"] = modData.constants.modPrefix .. "BusOfEntityDropDown"
+modData.constants.guiElementNames["channelOfEntityDropdown"] = modData.constants.modPrefix .. "ChannelOfEntityDropDown"
+modData.constants.guiElementNames["channelSetCreateButton"] = modData.constants.modPrefix .. "ChannelSetCreateButton"
+modData.constants.guiElementNames["channelAddButton"] = modData.constants.modPrefix .. "ChannelAddButton"
+modData.constants.guiElementNames["busAddButton"] = modData.constants.modPrefix .. "BusAddButton"
+modData.constants.guiElementNames["channelSetCreateTextfield"] = modData.constants.modPrefix .. "ChannelSetCreateTextfield"
+modData.constants.guiElementNames["channelListBox"] = modData.constants.modPrefix .. "ChannelListBox"
+modData.constants.guiElementNames["busListBox"] = modData.constants.modPrefix .. "BusListBox"
+modData.constants.guiElementNames["removeChannelButton"] = modData.constants.modPrefix .. "ChannelRemoveButton"
+modData.constants.guiElementNames["removeBusButton"] = modData.constants.modPrefix .. "BusRemoveButton"
+modData.constants.guiElementNames["moveChannelUpButton"] = modData.constants.modPrefix .. "MoveChannelUpButton"
+modData.constants.guiElementNames["moveChannelDownButton"] = modData.constants.modPrefix .. "MoveChannelDownButton"
+modData.constants.guiElementNames["newChannelTextfield"] = modData.constants.modPrefix .. "NewChannelTextfield"
+modData.constants.guiElementNames["newBusTextfield"] = modData.constants.modPrefix .. "NewBusTextfield"
+modData.constants.guiElementNames["sendCheckbox"] = modData.constants.modPrefix .. "SendCheckbox"
+modData.constants.guiElementNames["receiveCheckbox"] = modData.constants.modPrefix .. "ReceiveCheckbox"
+modData.constants.guiElementNames["bussesTab"] = modData.constants.modPrefix .. "BussesTab"
+
+
 
 
 local tools = Tools()
-local gui = Gui(constants, persistedModData, volatileModData)
+local gui = Gui(modData)
 
 
 
@@ -70,7 +76,7 @@ local gui = Gui(constants, persistedModData, volatileModData)
 
 
 local function OnInit()
-  global.wireless_circuit_bus_data = persistedModData
+  global.wireless_circuit_bus_data = modData.persisted
 
   for _, player in pairs(game.players) do
       gui.AddModGuiButton(player)
@@ -79,7 +85,7 @@ end
 
 
 local function OnLoad()
-  persistedModData = global.wireless_circuit_bus_data
+  modData.persisted = global.wireless_circuit_bus_data
 end
 
 
@@ -107,7 +113,7 @@ local function OnEntityCreated(event)
   end
 
   local uniqueEntityId = createdEntity.unit_number
-  persistedModData.nodes[uniqueEntityId] = { send = true, receive = true }
+  modData.persisted.nodes[uniqueEntityId] = { entityId = uniqueEntityId, bus = nil, channel = "", send = true, receive = true }
 
 end
 

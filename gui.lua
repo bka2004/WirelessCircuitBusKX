@@ -3,23 +3,21 @@ local ConfigGui = require "config_gui"
 local EntityGui = require "entity_gui"
 
 
-local function Gui(constants, persistedModData, volatileModData)
+local function Gui(modData)
 
     local self =
     {
 
     }
 
-    local constants = constants
-    local persistedModData = persistedModData
-    local volatileModData = volatileModData
+    local modData = modData
     local tools = Tools()
-    local configGui = ConfigGui(constants, persistedModData, volatileModData)
-    local entityGui = EntityGui(constants, persistedModData, volatileModData)
+    local configGui = ConfigGui(modData)
+    local entityGui = EntityGui(modData)
 
 
     function self.HandleModGuiButton(event)
-        if (event.element.name ~= constants.modGuiButtonName) then
+        if (event.element.name ~= modData.constants.guiElementNames.modGuiButton) then
           return false
         end
       
@@ -31,13 +29,6 @@ local function Gui(constants, persistedModData, volatileModData)
     end
 
 
-    function self.ShowEntityGui(player)
-
-        entityGui.Show(player)
-
-    end
-    
-    
     function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
@@ -49,7 +40,7 @@ local function Gui(constants, persistedModData, volatileModData)
 
 
     function self.AddModGuiButton(player)
-        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = constants.modGuiButtonName, sprite = "entity/small-biter", style = mod_gui.button_style}
+        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = modData.constants.guiElementNames.modGuiButton, sprite = "entity/small-biter", style = mod_gui.button_style}
           
       end
       
@@ -77,12 +68,10 @@ local function Gui(constants, persistedModData, volatileModData)
           if (clickedEntity.prototype.name ~= "bus-node") then
             return
           end
-        
-          volatileModData.editedEntity = clickedEntity
-        
+                
           local player = game.players[event.player_index]
         
-          self.ShowEntityGui(player)
+          entityGui.Show(player, clickedEntity)
               
       end
       

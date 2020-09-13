@@ -3,18 +3,15 @@ local BussesGui = require "busses_gui"
 local Tools = require "tools"
 
 
-local function ConfigGui(constants, persistedModData, volatileModData)
+local function ConfigGui(modData)
     local self =
     {
 
     }
 
-    local constants = constants
-    local persistedModData = persistedModData
-    local volatileModData = volatileModData
-
-    local channelSetGui = ChannelSetGui(constants, persistedModData, volatileModData)
-    local bussesGui = BussesGui(constants, persistedModData, volatileModData)
+    local modData = modData
+    local channelSetGui = ChannelSetGui(modData)
+    local bussesGui = BussesGui(modData)
     local tools = Tools()
 
 
@@ -22,19 +19,19 @@ local function ConfigGui(constants, persistedModData, volatileModData)
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.Title"}, style = "frame_title"}
         flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
-        flow.add{type = "sprite-button", name = constants.configGuiCloseButtonName, sprite = "utility/close_white", style = "frame_action_button"}
+        flow.add{type = "sprite-button", name = modData.constants.guiElementNames.configGuiCloseButton, sprite = "utility/close_white", style = "frame_action_button"}
     end
       
       
     function self.Show(player)
   
-        local frame = player.gui.screen.add{type = "frame", name = constants.configGui, direction = "vertical"}
-        volatileModData.guiElements[constants.configGui] = frame
+        local frame = player.gui.screen.add{type = "frame", name = modData.constants.guiElementNames.configGui, direction = "vertical"}
+        modData.volatile.guiElements[modData.constants.guiElementNames.configGui] = frame
         local verticalFlow = frame.add{type = "flow", direction = "vertical"}
         self.AddTitleBarToConfigGui(verticalFlow, frame)
         
         local tabPane = verticalFlow.add{type = "tabbed-pane"}
-        local bussesTab = tabPane.add{type = "tab", name = constants.bussesTab, caption={"ConfigGui.BussesTab"}}
+        local bussesTab = tabPane.add{type = "tab", name = modData.constants.guiElementNames.bussesTab, caption={"ConfigGui.BussesTab"}}
         local bussesFlow = tabPane.add{type = "flow", direction = "vertical"}
         bussesGui.AddBussesGui(bussesFlow)
         tabPane.add_tab(bussesTab, bussesFlow)
@@ -51,13 +48,13 @@ local function ConfigGui(constants, persistedModData, volatileModData)
     function self.HandleCloseButton(event)
       
         local frame
-        if (event.element.name ~= constants.configGuiCloseButtonName) then
+        if (event.element.name ~= modData.constants.guiElementNames.configGuiCloseButton) then
             return false
         end
 
-        local frame = volatileModData.guiElements[constants.configGui]
+        local frame = modData.volatile.guiElements[modData.constants.guiElementNames.configGui]
       
-        volatileModData.guiElements = {}
+        modData.volatile.guiElements = {}
         frame.destroy()
       
         return true
@@ -66,11 +63,11 @@ local function ConfigGui(constants, persistedModData, volatileModData)
 
       function self.HandleBussesTabActivated(event)
 
-        if (event.element.name ~= constants.bussesTab) then
+        if (event.element.name ~= modData.constants.guiElementNames.bussesTab) then
           return false
         end
       
-        volatileModData.guiElements[constants.chooseChannelSetDropDown].items = tools.ChannelSetsAsLocalizedStringList(persistedModData.channelSets)
+        modData.volatile.guiElements[modData.constants.guiElementNames.chooseChannelSetDropDown].items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
       
         return true
 

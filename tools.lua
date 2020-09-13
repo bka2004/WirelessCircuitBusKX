@@ -5,7 +5,7 @@ local function Tools()
     function self.ChannelSetsAsLocalizedStringList(channelSets)
         local localizeStringList = {}
         for name,_ in pairs(channelSets) do
-          localizeStringList[#localizeStringList + 1] = {"", name}
+          localizeStringList[#localizeStringList + 1] = name --{"", name}
         end
       
         return localizeStringList
@@ -15,7 +15,7 @@ local function Tools()
     function self.ChannelsAsLocalizedStringList(channels)
         local localizeStringList = {}
         for _, name in pairs(channels) do
-          localizeStringList[#localizeStringList + 1] = {"", name}
+          localizeStringList[#localizeStringList + 1] = name -- {"", name}
         end
       
         return localizeStringList
@@ -25,7 +25,7 @@ local function Tools()
     function self.BussesAsLocalizedStringList(busses, channelSets)
         local localizeStringList = {}
         for name, bus in pairs(busses) do
-          localizeStringList[#localizeStringList + 1] = {"", name .. " - " .. channelSets[bus.channelSet].name}
+          localizeStringList[#localizeStringList + 1] = name .. " - " .. channelSets[bus.channelSet].name -- {"", name .. " - " .. channelSets[bus.channelSet].name}
         end
       
         return localizeStringList
@@ -34,6 +34,22 @@ local function Tools()
 
     function self.BusNameFromBusDisplayString(busDisplayString)
         return busDisplayString:sub(1, busDisplayString:find(" - ") - 1)
+    end
+
+    
+    function self.GetIndexOfDropdownItem(items, item, dropdownItemModifier)
+
+        for i, name in pairs(items) do
+            if (dropdownItemModifier ~= nil) then
+                name = dropdownItemModifier(name)
+            end
+            if (name == item) then
+                return i
+            end
+        end
+
+        return 0
+
     end
 
 

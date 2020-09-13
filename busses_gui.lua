@@ -1,40 +1,38 @@
 local Tools = require "tools"
 
-local function BussesGui(constants, persistedModData, volatileModData)
+local function BussesGui(modData)
     local self =
     {
 
     }
 
-    local constants = constants
-    local persistedModData = persistedModData
-    local volatileModData = volatileModData
+    local modData = modData
     local tools = Tools()
 
 
     function self.HandleBusAddButton(event)
-        if (event.element.name ~= constants.busAddButtonName) then
+        if (event.element.name ~= modData.constants.guiElementNames.busAddButton) then
           return false
         end
       
-        local busTextfield = volatileModData.guiElements[constants.newBusTextfieldName]
+        local busTextfield = modData.volatile.guiElements[modData.constants.guiElementNames.newBusTextfield]
         local busName = busTextfield.text
         if (busName:len() == 0) then
           return true
         end
       
-        local channelSetDropDown = volatileModData.guiElements[constants.chooseChannelSetDropDown]
+        local channelSetDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.chooseChannelSetDropDown]
         local selectedIndex = channelSetDropDown.selected_index
         if (selectedIndex == 0) then
           return true
         end
       
-        local channelSetName = channelSetDropDown.get_item(selectedIndex)[2]
-        persistedModData.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
+        local channelSetName = channelSetDropDown.get_item(selectedIndex)
+        modData.persisted.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
         busTextfield.text = ""
       
-        local busList = volatileModData.guiElements[constants.busListBoxName]
-        busList.items = tools.BussesAsLocalizedStringList(persistedModData.busses, persistedModData.channelSets)
+        local busList = modData.volatile.guiElements[modData.constants.guiElementNames.busListBox]
+        busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
       
         return true
       end
@@ -43,18 +41,18 @@ local function BussesGui(constants, persistedModData, volatileModData)
     function self.AddBusSelectorToBussesGui(parent)
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.BusNameLabel"}}
-        volatileModData.guiElements[constants.newBusTextfieldName] = flow.add{type = "textfield", name = constants.newBusTextfieldName}
+        modData.volatile.guiElements[modData.constants.guiElementNames.newBusTextfield] = flow.add{type = "textfield", name = modData.constants.guiElementNames.newBusTextfield}
         flow.add{type = "label", caption = {"ConfigGui.ChannelSetLabel"}}
-        volatileModData.guiElements[constants.chooseChannelSetDropDown] = flow.add{type = "drop-down", name = constants.chooseChannelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(persistedModData.channelSets)}
-        volatileModData.guiElements[constants.busAddButtonName] = flow.add{type = "button", name = constants.busAddButtonName, caption = {"ConfigGui.Add"}}
+        modData.volatile.guiElements[modData.constants.guiElementNames.chooseChannelSetDropDown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.chooseChannelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)}
+        modData.volatile.guiElements[modData.constants.guiElementNames.busAddButton] = flow.add{type = "button", name = modData.constants.guiElementNames.busAddButton, caption = {"ConfigGui.Add"}}
     end
       
       
     function self.AddBusListToBussesGui(parent)
         local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-        volatileModData.guiElements[constants.busListBoxName] = outerFlow.add{type = "list-box", name = constants.busListBoxName, items = tools.BussesAsLocalizedStringList(persistedModData.busses)}
+        modData.volatile.guiElements[modData.constants.guiElementNames.busListBox] = outerFlow.add{type = "list-box", name = modData.constants.guiElementNames.busListBox, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)}
         local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
-        innerFlow.add{type = "button", name = constants.removeChannelButtonName, caption = {"ConfigGui.Remove"}}
+        innerFlow.add{type = "button", name = modData.constants.guiElementNames.removeChannelButton, caption = {"ConfigGui.Remove"}}
     end
       
       

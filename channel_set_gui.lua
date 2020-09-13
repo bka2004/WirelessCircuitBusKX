@@ -2,24 +2,22 @@ local ChannelSet = require "channel_set"
 local Tools = require "tools"
 
 
-local function ChannelSetGui(constants, persistedModData, volatileModData)
+local function ChannelSetGui(modData)
     local self =
     {
 
     }
 
-    local constants = constants
-    local persistedModData = persistedModData
-    local volatileModData = volatileModData
+    local modData = modData
     local tools = Tools()
 
     function self.AddChannelSetSelectorToChannelSetGui(parent)
 
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.Label"}}
-        volatileModData.guiElements[constants.channelSetDropDown] = flow.add{type = "drop-down", name = constants.channelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(persistedModData.channelSets)}
-        flow.add{type = "textfield", name = constants.channelSetCreateTextfield}
-        flow.add{type = "button", name = constants.channelSetCreateButtonName, caption = {"ConfigGui.Create"}}
+        modData.volatile.guiElements[modData.constants.guiElementNames.channelSetDropDown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.channelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)}
+        flow.add{type = "textfield", name = modData.constants.guiElementNames.channelSetCreateTextfield}
+        flow.add{type = "button", name = modData.constants.guiElementNames.channelSetCreateButton, caption = {"ConfigGui.Create"}}
 
     end
       
@@ -27,32 +25,32 @@ local function ChannelSetGui(constants, persistedModData, volatileModData)
     function self.AddChannelSelectorToChannelSetGui(parent)
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.Channels"}}
-        volatileModData.guiElements[constants.newChannelTextfieldName] = flow.add{type = "textfield", name = constants.newChannelTextfieldName}
-        volatileModData.guiElements[constants.channelAddButtonName] = flow.add{type = "button", name = constants.channelAddButtonName, caption = {"ConfigGui.Add"}}
+        modData.volatile.guiElements[modData.constants.guiElementNames.newChannelTextfield] = flow.add{type = "textfield", name = modData.constants.guiElementNames.newChannelTextfield}
+        modData.volatile.guiElements[modData.constants.guiElementNames.channelAddButton] = flow.add{type = "button", name = modData.constants.guiElementNames.channelAddButton, caption = {"ConfigGui.Add"}}
     end
       
       
     function self.AddChannelListToChannelSetGui(parent)
         local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-        volatileModData.guiElements[constants.channelListBoxName] = outerFlow.add{type = "list-box", name = constants.channelListBoxName, items = {}}
+        modData.volatile.guiElements[modData.constants.guiElementNames.channelListBox] = outerFlow.add{type = "list-box", name = modData.constants.guiElementNames.channelListBox, items = {}}
         local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
-        innerFlow.add{type = "button", name = constants.removeChannelButtonName, caption = {"ConfigGui.Remove"}}
-        innerFlow.add{type = "button", name = constants.moveChannelUpButtonName, caption = {"ConfigGui.Up"}}
-        innerFlow.add{type = "button", name = constants.moveChannelDownButtonName, caption = {"ConfigGui.Down"}}
+        innerFlow.add{type = "button", name = modData.constants.guiElementNames.removeChannelButton, caption = {"ConfigGui.Remove"}}
+        innerFlow.add{type = "button", name = modData.constants.guiElementNames.moveChannelUpButton, caption = {"ConfigGui.Up"}}
+        innerFlow.add{type = "button", name = modData.constants.guiElementNames.moveChannelDownButton, caption = {"ConfigGui.Down"}}
     end
 
 
     function self.HandleChannelSetDropDownChanged(event)
 
-        if (event.element.name ~= constants.channelSetDropDown) then
+        if (event.element.name ~= modData.constants.guiElementNames.channelSetDropDown) then
           return false
         end
       
         local channelSetDropDown = event.element
-        local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)[2]
-        local channelsOfSelectedChannelSet = persistedModData.channelSets[channelSetName].channels
+        local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)
+        local channelsOfSelectedChannelSet = modData.persisted.channelSets[channelSetName].channels
       
-        local channelList = volatileModData.guiElements[constants.channelListBoxName]
+        local channelList = modData.volatile.guiElements[modData.constants.guiElementNames.channelListBox]
         channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
       
         return true
@@ -69,18 +67,18 @@ local function ChannelSetGui(constants, persistedModData, volatileModData)
     end
 
     function self.HandleChannelAddButton(event)
-        if (event.element.name ~= constants.channelAddButtonName) then
+        if (event.element.name ~= modData.constants.guiElementNames.channelAddButton) then
           return false
         end
       
-        local channelTextfield = volatileModData.guiElements[constants.newChannelTextfieldName]
-        local channelSetDropDown = volatileModData.guiElements[constants.channelSetDropDown]
-        local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)[2]
-        local channelsOfSelectedChannelSet = persistedModData.channelSets[channelSetName].channels
+        local channelTextfield = modData.volatile.guiElements[modData.constants.guiElementNames.newChannelTextfield]
+        local channelSetDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.channelSetDropDown]
+        local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)
+        local channelsOfSelectedChannelSet = modData.persisted.channelSets[channelSetName].channels
         table.insert(channelsOfSelectedChannelSet, channelTextfield.text)
         channelTextfield.text = ""
       
-        local channelList = volatileModData.guiElements[constants.channelListBoxName]
+        local channelList = modData.volatile.guiElements[modData.constants.guiElementNames.channelListBox]
         channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
       
         return true
@@ -88,18 +86,18 @@ local function ChannelSetGui(constants, persistedModData, volatileModData)
       
             
       function self.HandleChannelSetCreateButton(event)
-        if (event.element.name ~= constants.channelSetCreateButtonName) then
+        if (event.element.name ~= modData.constants.guiElementNames.channelSetCreateButton) then
           return false
         end
       
-        local textfield = event.element.parent[constants.channelSetCreateTextfield]
+        local textfield = event.element.parent[modData.constants.guiElementNames.channelSetCreateTextfield]
         local newChannelSetName = textfield.text
-        persistedModData.channelSets[newChannelSetName] = ChannelSet(newChannelSetName)
+        modData.persisted.channelSets[newChannelSetName] = ChannelSet(newChannelSetName)
       
         textfield.text = ""
       
-        local dropdown = event.element.parent[constants.channelSetDropDown]
-        dropdown.items = tools.ChannelSetsAsLocalizedStringList(persistedModData.channelSets)
+        local dropdown = event.element.parent[modData.constants.guiElementNames.channelSetDropDown]
+        dropdown.items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
         dropdown.selected_index = #dropdown.items
       
         return true
