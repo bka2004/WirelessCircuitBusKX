@@ -13,6 +13,7 @@ local CreateBusNodeEntity = function()
             tint = { r = 1, g = 0, b = 0, a = 0.3 }
         },
     }
+    entity.additional_pastable_entities = {"bus-node"}
 
     return entity
 end
@@ -22,6 +23,7 @@ local CreateBusNodeItem = function()
 
     local item = table.deepcopy(data.raw["item"]["constant-combinator"])
 
+    item.type = "item-with-tags"
     item.name = "bus-node"
     item.place_result = "bus-node"
     item.icons =

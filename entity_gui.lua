@@ -59,7 +59,7 @@ local function EntityGui(modData)
       function self.GetNodeForEditedEntity()
 
         local uniqueEntityId = modData.volatile.editedEntity.unit_number
-        return modData.persisted.nodes[uniqueEntityId]
+        return modData.tools.getBusNode(uniqueEntityId)
 
       end
 
@@ -88,7 +88,11 @@ local function EntityGui(modData)
         local dropDown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
         dropDown.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
         local busOfEntity = self.GetBusOfEditedEntity()
-        dropDown.selected_index = tools.GetIndexOfDropdownItem(dropDown.items, busOfEntity.name, tools.BusNameFromBusDisplayString)
+        if (busOfEntity:len() > 0) then
+          dropDown.selected_index = tools.GetIndexOfDropdownItem(dropDown.items, busOfEntity, tools.BusNameFromBusDisplayString)
+        else
+          dropDown.selected_index = 0
+        end
 
     end
 
@@ -113,8 +117,8 @@ local function EntityGui(modData)
           local channelSet = nil
           if (busDropDown.selected_index == 0) then
             local busOfEntity = self.GetBusOfEditedEntity()
-            if (busOfEntity ~= nil) then
-              channelSet = modData.persisted.channelSets[busOfEntity.channelSet]
+            if (busOfEntity:len() > 0) then
+              channelSet = modData.persisted.channelSets[modData.persisted.busses[busOfEntity].channelSet]
             end
           else
             channelSet = self.GetChannelSetByBusName(tools.BusNameFromBusDisplayString(busDropDown.items[busDropDown.selected_index]))
@@ -131,6 +135,10 @@ local function EntityGui(modData)
       
       function self.Close()
         local frame = modData.volatile.guiElements[modData.constants.guiElementNames.entityGui]
+        if (not frame) then
+          return
+        end
+
         modData.volatile.editedEntity = nil
       
         modData.volatile.guiElements = {}
@@ -149,7 +157,7 @@ local function EntityGui(modData)
         return true
       end
 
-      
+
       function self.HandleBusDropDownSelectionChanged(event)
         if (event.element.name ~= modData.constants.guiElementNames.busOfEntityDropdown) then
           return
@@ -164,14 +172,14 @@ local function EntityGui(modData)
         local busDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
         local selectedBusIndex = busDropdown.selected_index
         if (selectedBusIndex == 0) then
-          if (busNode.bus ~= nil) then
-            busNode.bus.nodes[busNode.entityId] = nil
-            busNode.bus = nil
+          if (busNode.bus:len() > 0) then
+            modData.persisted.busses[busNode.bus].nodes[modData.volatile.editedEntity.unit_number] = nil
+            busNode.bus = ""
           end
         else
-          local selectedBus = modData.persisted.busses[tools.BusNameFromBusDisplayString(busDropdown.items[selectedBusIndex])]
+          local selectedBus = tools.BusNameFromBusDisplayString(busDropdown.items[selectedBusIndex])
           busNode.bus = selectedBus
-          selectedBus.nodes[busNode.entityId] = busNode
+          modData.persisted.busses[selectedBus].nodes[modData.volatile.editedEntity.unit_number] = busNode
         end
       end
 
@@ -218,6 +226,8 @@ local function EntityGui(modData)
       
 
       function self.Show(player, entity)
+
+        self.Close() -- in case another entity is already open
 
         modData.volatile.editedEntity = entity
 

@@ -2,10 +2,11 @@ require "mod-gui"
 local BusNode = require "bus_node"
 local Tools = require "tools"
 local Gui = require "gui"
+local Ghosts = require "ghosts"
 
 
 
-
+local tools = Tools()
 
 string.starts_with = function (self, substring)
   return self:sub(1, substring:len()) == substring
@@ -26,14 +27,61 @@ local modData =
   {
     channelSets = {},
     busses = {},
-    nodes = {}  
+    nodes = {},
   },
   volatile = 
   {
     guiElements = {},
     editedEntity = nil
-    }
+  }
 }
+
+modData.tools =
+{
+  registerNode = function (entityId)
+
+    modData.persisted.nodes[entityId] = { bus = "", channel = "", send = true, receive = true }
+  
+  end
+}
+  
+modData.tools.registerNodeWithSettings = function(nodeId, settings)
+
+  modData.persisted.nodes[nodeId] = settings
+
+end
+
+modData.tools.getBusNode = function(nodeId)
+    local node = modData.persisted.nodes[nodeId]
+    if (not node) then
+      modData.persisted.nodes[nodeId] = modData.tools.registerNode(nodeId)
+    end
+
+    return node
+
+  end
+
+  modData.tools.getNodeSettings = function(nodeId)
+    local node = modData.persisted.nodes[nodeId]
+
+    if (not node) then
+      return nil
+    end
+
+    return tools.deepTableCopy(node)
+
+  end
+
+  modData.tools.setNodeSettings = function(nodeId, settings)
+    local node = modData.persisted.nodes[nodeId]
+
+    if (not node) then
+      return
+    end
+
+    modData.persisted.nodes[nodeId] = settings
+
+  end
 
 
 
@@ -66,8 +114,8 @@ modData.constants.guiElementNames["bussesTab"] = modData.constants.modPrefix .. 
 
 
 
-local tools = Tools()
 local gui = Gui(modData)
+local ghosts = Ghosts(modData)
 
 
 
@@ -100,20 +148,69 @@ local function OnTick(event)
   local tick = event.tick;
 
   if (tick % 60 == 0) then
+    ghosts.CheckPendingGhostsForRevival()
   end
 end
 
 
-local function OnEntityCreated(event)
+local function OnBlueprintSetup(event)
+  
+  local player = game.players[event.player_index]
+
+  local blueprint = player.blueprint_to_setup
+  if (not blueprint or not blueprint.valid_for_read) then
+    blueprint = player.cursor_stack
+  end
+  local bpe = blueprint.get_blueprint_entities()
+  for _, entity in ipairs(bpe) do
+    if (entity.name == "bus-node") then
+      local orig = player.surface.find_entity("bus-node", entity.position)
+      local origSettings = modData.tools.getNodeSettings(orig.unit_number)
+      blueprint.set_blueprint_entity_tag(entity.entity_number, "sourceBusNodeSettings", origSettings)
+      local x = "y"
+    end
+  end
+  local x = "g"
+end
+
+
+local function OnEntityCreatedByPlacing(event)
 
   local createdEntity = event.created_entity
+
+  -- if (event.stack.is_blueprint) then
+  --   local x = event.stack.get_blueprint_entities()
+  --   for i, bpe in pairs(x) do
+  --     local orig = game.surfaces["nauvis"].find_entity("bus-node", bpe.position)
+  --     local xx = "xx"
+  --   end
+  --   local bla ="fasel"
+  -- end
+  
+  if (createdEntity.name == "entity-ghost" and createdEntity.ghost_name == "bus-node") then
+    ghosts.AddPending(createdEntity)
+  end
 
   if (createdEntity.name ~= "bus-node") then
     return
   end
 
-  local uniqueEntityId = createdEntity.unit_number
-  modData.persisted.nodes[uniqueEntityId] = { entityId = uniqueEntityId, bus = nil, channel = "", send = true, receive = true }
+  local uniqueIdOfNewEntity = event.created_entity.unit_number
+  modData.tools.registerNode(uniqueIdOfNewEntity)
+
+end
+
+
+local function OnSettingsPasted(event)
+
+  if (event.destination.name ~= "bus-node") then
+    return
+  end
+
+  local sourceId = event.source.unit_number
+  local destId = event.destination.unit_number
+
+  modData.tools.setNodeSettings(destId, modData.tools.getNodeSettings(sourceId))
 
 end
 
@@ -125,6 +222,9 @@ script.on_event(defines.events.on_tick, OnTick)
 script.on_event(defines.events.on_gui_opened, gui.HandleOnGuiOpened)
 script.on_event(defines.events.on_gui_click, gui.HandleOnGuiClick)
 script.on_event(defines.events.on_gui_selection_state_changed, gui.HandleOnGuiSelectionStateChanged)
-script.on_event(defines.events.on_entity_cloned, OnEntityCreated)
-script.on_event(defines.events.on_built_entity, OnEntityCreated)
+script.on_event(defines.events.on_entity_cloned, OnEntityCreatedByPlacing)
+script.on_event(defines.events.on_built_entity, OnEntityCreatedByPlacing)
+script.on_event(defines.events.on_robot_built_entity, OnEntityCreatedByPlacing)
+script.on_event(defines.events.on_entity_settings_pasted, OnSettingsPasted)
+script.on_event(defines.events.on_player_setup_blueprint, OnBlueprintSetup)
 
