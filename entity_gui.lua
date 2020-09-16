@@ -66,7 +66,7 @@ local function EntityGui(modData)
 
       function self.GetBusOfEditedEntity()
 
-        return self.GetNodeForEditedEntity().bus
+        return self.GetNodeForEditedEntity().settings.bus
 
       end
 
@@ -99,13 +99,13 @@ local function EntityGui(modData)
 
     function self.UpdateSendReceiveCheckboxes()
 
-      local busNode = self.GetNodeForEditedEntity()
+      local busNodeSettings = self.GetNodeForEditedEntity().settings
 
       local sendCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.sendCheckbox]
-      sendCheckbox.state = busNode.send
+      sendCheckbox.state = busNodeSettings.send
 
       local receiveCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.receiveCheckbox]
-      receiveCheckbox.state = busNode.receive
+      receiveCheckbox.state = busNodeSettings.receive
 
   end
 
@@ -128,7 +128,7 @@ local function EntityGui(modData)
             channelDropDown.items = {}
           else
             channelDropDown.items = tools.ChannelsAsLocalizedStringList(channelSet.channels)
-            channelDropDown.selected_index = tools.GetIndexOfDropdownItem(channelDropDown.items, self.GetNodeForEditedEntity().channel)
+            channelDropDown.selected_index = tools.GetIndexOfDropdownItem(channelDropDown.items, self.GetNodeForEditedEntity().settings.channel)
           end
       end
 
@@ -169,17 +169,19 @@ local function EntityGui(modData)
       
 
       function ApplySelectedBus(busNode)
+
+        local busNodeSettings = busNode.settings
         local busDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
         local selectedBusIndex = busDropdown.selected_index
         if (selectedBusIndex == 0) then
-          if (busNode.bus:len() > 0) then
-            modData.persisted.busses[busNode.bus].nodes[modData.volatile.editedEntity.unit_number] = nil
+          if (busNodeSettings.bus:len() > 0) then
+            modData.persisted.busses[busNodeSettings.bus].nodes[busNode.worldEntity.unit_number] = nil
             busNode.bus = ""
           end
         else
           local selectedBus = tools.BusNameFromBusDisplayString(busDropdown.items[selectedBusIndex])
-          busNode.bus = selectedBus
-          modData.persisted.busses[selectedBus].nodes[modData.volatile.editedEntity.unit_number] = busNode
+          busNodeSettings.bus = selectedBus
+          modData.persisted.busses[selectedBus].nodes[busNode.worldEntity.unit_number] = busNode
         end
       end
 
@@ -189,7 +191,7 @@ local function EntityGui(modData)
         local channelDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.channelOfEntityDropdown]
 
         if (channelDropDown.selected_index ~= 0) then
-          busNode.channel = channelDropDown.items[channelDropDown.selected_index]
+          busNode.settings.channel = channelDropDown.items[channelDropDown.selected_index]
         end
 
       end
@@ -200,8 +202,8 @@ local function EntityGui(modData)
         local sendCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.sendCheckbox]
         local receiveCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.receiveCheckbox]
 
-        busNode.send = sendCheckbox.state
-        busNode.receive = receiveCheckbox.state
+        busNode.settings.send = sendCheckbox.state
+        busNode.settings.receive = receiveCheckbox.state
 
       end
 

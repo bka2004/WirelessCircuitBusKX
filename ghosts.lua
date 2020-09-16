@@ -18,10 +18,10 @@ local function Ghosts(modData)
 
         for i, ghost_data in pairs(self.pending) do
 
-            local busNodeAtPosition = game.surfaces["nauvis"].find_entity("bus-node", ghost_data.position)
-            if (busNodeAtPosition) then
+            local entityAtPosition = game.surfaces["nauvis"].find_entity("bus-node", ghost_data.position)
+            if (entityAtPosition) then
 
-                modData.tools.registerNodeWithSettings(busNodeAtPosition.unit_number, ghost_data.settings)
+                modData.tools.registerNodeWithSettings(entityAtPosition.unit_number, entityAtPosition, ghost_data.settings)
 
                 self.pending[i] = nil
 

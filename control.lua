@@ -3,6 +3,7 @@ local BusNode = require "bus_node"
 local Tools = require "tools"
 local Gui = require "gui"
 local Ghosts = require "ghosts"
+local Bus = require "bus"
 
 
 
@@ -21,6 +22,7 @@ local modData =
   constants = 
   {  
     modPrefix = "WLCBKX_",
+    signalMergeMode = {add = 1, substract = 2},
     guiElementNames = {}
   },
   persisted = 
@@ -38,28 +40,28 @@ local modData =
 
 modData.tools =
 {
-  registerNode = function (entityId)
+  registerNode = function (entityId, entity)
 
-    modData.persisted.nodes[entityId] = { bus = "", channel = "", send = true, receive = true }
+    modData.persisted.nodes[entityId] = 
+    {
+      worldEntity = entity,
+      settings = { bus = "", channel = "", send = true, receive = true }
+    }
   
   end
 }
   
-modData.tools.registerNodeWithSettings = function(nodeId, settings)
+modData.tools.registerNodeWithSettings = function(entityId, entity, settings)
 
-  modData.persisted.nodes[nodeId] = settings
+  modData.persisted.nodes[entityId] = { worldEntity = entity, settings = settings }
 
 end
 
 modData.tools.getBusNode = function(nodeId)
-    local node = modData.persisted.nodes[nodeId]
-    if (not node) then
-      modData.persisted.nodes[nodeId] = modData.tools.registerNode(nodeId)
-    end
 
-    return node
+  return modData.persisted.nodes[nodeId]
 
-  end
+end
 
   modData.tools.getNodeSettings = function(nodeId)
     local node = modData.persisted.nodes[nodeId]
@@ -68,7 +70,7 @@ modData.tools.getBusNode = function(nodeId)
       return nil
     end
 
-    return tools.deepTableCopy(node)
+    return tools.deepTableCopy(node.settings)
 
   end
 
@@ -79,7 +81,7 @@ modData.tools.getBusNode = function(nodeId)
       return
     end
 
-    modData.persisted.nodes[nodeId] = settings
+    modData.persisted.nodes[nodeId].settings = settings
 
   end
 
@@ -116,7 +118,7 @@ modData.constants.guiElementNames["bussesTab"] = modData.constants.modPrefix .. 
 
 local gui = Gui(modData)
 local ghosts = Ghosts(modData)
-
+local bus = Bus(modData)
 
 
 
@@ -145,11 +147,17 @@ end
 
 
 local function OnTick(event)
+
   local tick = event.tick;
 
   if (tick % 60 == 0) then
     ghosts.CheckPendingGhostsForRevival()
+
+    for busName, _ in pairs(modData.persisted.busses) do
+      bus.Update(busName)
+    end
   end
+
 end
 
 
@@ -167,25 +175,15 @@ local function OnBlueprintSetup(event)
       local orig = player.surface.find_entity("bus-node", entity.position)
       local origSettings = modData.tools.getNodeSettings(orig.unit_number)
       blueprint.set_blueprint_entity_tag(entity.entity_number, "sourceBusNodeSettings", origSettings)
-      local x = "y"
     end
   end
-  local x = "g"
+
 end
 
 
 local function OnEntityCreatedByPlacing(event)
 
   local createdEntity = event.created_entity
-
-  -- if (event.stack.is_blueprint) then
-  --   local x = event.stack.get_blueprint_entities()
-  --   for i, bpe in pairs(x) do
-  --     local orig = game.surfaces["nauvis"].find_entity("bus-node", bpe.position)
-  --     local xx = "xx"
-  --   end
-  --   local bla ="fasel"
-  -- end
   
   if (createdEntity.name == "entity-ghost" and createdEntity.ghost_name == "bus-node") then
     ghosts.AddPending(createdEntity)
@@ -195,8 +193,7 @@ local function OnEntityCreatedByPlacing(event)
     return
   end
 
-  local uniqueIdOfNewEntity = event.created_entity.unit_number
-  modData.tools.registerNode(uniqueIdOfNewEntity)
+  modData.tools.registerNode(createdEntity.unit_number, createdEntity)
 
 end
 
