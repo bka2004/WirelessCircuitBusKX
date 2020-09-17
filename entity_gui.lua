@@ -36,14 +36,10 @@ local function EntityGui(modData)
       function self.AddSendReceiveSelectorToEntityGui(parent)
       
         local flow = parent.add{type = "flow", direction = "horizontal"}
-        modData.volatile.guiElements[modData.constants.guiElementNames.sendCheckbox] = flow.add{type = "checkbox", name = modData.constants.guiElementNames.sendCheckbox, state = true}
-        flow.add{type = "label", caption = {"EntityGui.SendLabel"}}
+        flow.add{type = "label", caption = {"EntityGui.DirectionLabel"}}
+        modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.directionDropdown, items = {}}
       
-        local flow = parent.add{type = "flow", direction = "horizontal"}
-        modData.volatile.guiElements[modData.constants.guiElementNames.receiveCheckbox] = flow.add{type = "checkbox", name = modData.constants.guiElementNames.receiveCheckbox, state = true}
-        flow.add{type = "label", caption = {"EntityGui.ReceiveLabel"}}
-
-        self.UpdateSendReceiveCheckboxes()
+        self.UpdateDirectionDropdown()
       
       end
       
@@ -97,17 +93,19 @@ local function EntityGui(modData)
     end
 
 
-    function self.UpdateSendReceiveCheckboxes()
+    function self.UpdateDirectionDropdown()
 
+      local directionDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown]
+      directionDropdown.items = { "Send", "Receive"}
+      
       local busNodeSettings = self.GetNodeForEditedEntity().settings
+      if (busNodeSettings.direction == modData.constants.nodeDirection.send) then
+        directionDropdown.selected_index = 1
+      else
+        directionDropdown.selected_index = 2
+      end
 
-      local sendCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.sendCheckbox]
-      sendCheckbox.state = busNodeSettings.send
-
-      local receiveCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.receiveCheckbox]
-      receiveCheckbox.state = busNodeSettings.receive
-
-  end
+    end
 
 
     function self.UpdateChannelOfEntityDropdown()
@@ -159,6 +157,7 @@ local function EntityGui(modData)
 
 
       function self.HandleBusDropDownSelectionChanged(event)
+
         if (event.element.name ~= modData.constants.guiElementNames.busOfEntityDropdown) then
           return
         end
@@ -199,11 +198,13 @@ local function EntityGui(modData)
 
       function ApplySendReceiveStats(busNode)
      
-        local sendCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.sendCheckbox]
-        local receiveCheckbox = modData.volatile.guiElements[modData.constants.guiElementNames.receiveCheckbox]
+        local directionDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown]
 
-        busNode.settings.send = sendCheckbox.state
-        busNode.settings.receive = receiveCheckbox.state
+        if (directionDropdown.selected_index == 1) then
+          busNode.settings.direction = modData.constants.nodeDirection.send
+        else
+          busNode.settings.direction = modData.constants.nodeDirection.receive
+        end
 
       end
 
@@ -243,6 +244,7 @@ local function EntityGui(modData)
         self.AddOkButtonToEntityGui(verticalFlow)
       
         player.opened = frame
+
       end
 
 

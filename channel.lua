@@ -37,59 +37,121 @@ local function Channel(modData)
     -- end
 
 
-    -- function self.SetOutputOnReceivers(signals, bus, channelName)
+    function self.StringKeyFromSignalSpec(signalSpec)
 
-    --     for _, node in pairs(bus.nodes) do
-    --         local nodeSettings = node.settings
-    --         if (nodeSettings.channel == channelName and nodeSettings.receive) then
+        return signalSpec.type .. signalSpec.name
 
-    --             -- substract the signals seen at the receiver, because they will get added to the output
-    --             local network = node.worldEntity.get_circuit_network(defines.wire_type.red)
-    --             if (network) then
-    --                 self.MergeSignals(signals, network.signals, modData.constants.signalMergeMode.substract)
-    --             end
-    --             network = node.worldEntity.get_circuit_network(defines.wire_type.green)
-    --             if (network) then
-    --                 self.MergeSignals(signals, network.signals, modData.constants.signalMergeMode.substract)
-    --             end
-
-    --             node.worldEntity.get_or_create_control_behavior().parameters = { parameters = self.GetConstantCombinatorParametersFromSignals(signals) }
-    --         end
-    --     end
-
-    -- end
+    end
 
 
-    -- function self.GetSignalsFromWire(wire, bus, channelName)
+    function self.GetDelimitedCount(count)
+        return math.min(2147483647, math.max(-2147483647, count))
+    end
 
-    --     local signals = {}
 
-    --     for _, node in pairs(bus.nodes) do
-    --         local nodeSettings = node.settings
-    --         if (nodeSettings.channel == channelName and nodeSettings.send) then
+    function self.MergeSignals(firstSet, secondSet)
+
+        if (not secondSet or #secondSet == 0) then
+            return
+        end
+
+        local countsBySignalId = {}
+
+        for _, signal in pairs(firstSet) do
+            local signalSpec = signal.signal
+            countsBySignalId[self.StringKeyFromSignalSpec(signalSpec)] = { count = signal.count, signalSpec = signalSpec }
+        end
+
+        for _, signal in pairs(secondSet) do
+            
+            local signalSpec = signal.signal
+            local signalKey = self.StringKeyFromSignalSpec(signalSpec)
+            if (countsBySignalId[signalKey] ~= nil) then
+                countsBySignalId[signalKey].count = self.GetDelimitedCount(countsBySignalId[signalKey].count  + signal.count)
+            else
+                countsBySignalId[signalKey] = { count = signal.count, signalSpec = signalSpec }
+            end
+        end
+
+        for i, signal in ipairs(firstSet) do
+
+            local signalSpec = signal.signal
+            local signalKey = self.StringKeyFromSignalSpec(signalSpec)
+            signal.count = countsBySignalId[signalKey].count
+            countsBySignalId[signalKey] = nil
+        end
+
+        for signalKeyString, signalInfo in pairs(countsBySignalId) do
+            firstSet[#firstSet+1] = { signal = signalInfo.signalSpec, count = signalInfo.count }
+        end
+    end
+
+
+    function self.GetConstantCombinatorParametersFromSignals(signals)
+
+        local constantCombinatorParameters = {}
+
+        for i, signal in ipairs(signals) do
+            constantCombinatorParameters[#constantCombinatorParameters+1] = { signal = signal.signal, count = signal.count, index = #constantCombinatorParameters+1 }
+        end
+
+        return constantCombinatorParameters
+    end
+
+
+    function self.SetOutputOnReceivers(signals, bus, channelName)
+
+        for _, node in pairs(bus.nodes) do
+            local nodeSettings = node.settings
+            if (nodeSettings.channel == channelName and nodeSettings.direction == modData.constants.nodeDirection.receive) then
+
+                -- -- substract the signals seen at the receiver, because they will get added to the output
+                -- local network = node.worldEntity.get_circuit_network(defines.wire_type.red)
+                -- if (network) then
+                --     self.MergeSignals(signals, network.signals, modData.constants.signalMergeMode.substract)
+                -- end
+                -- network = node.worldEntity.get_circuit_network(defines.wire_type.green)
+                -- if (network) then
+                --     self.MergeSignals(signals, network.signals, modData.constants.signalMergeMode.substract)
+                -- end
+
+                node.worldEntity.get_or_create_control_behavior().parameters = { parameters = self.GetConstantCombinatorParametersFromSignals(signals) }
+            end
+        end
+
+    end
+
+
+    function self.GetSignalsFromWire(wire, bus, channelName)
+
+        local signals = {}
+
+        for _, node in pairs(bus.nodes) do
+            local nodeSettings = node.settings
+            if (nodeSettings.channel == channelName and nodeSettings.direction == modData.constants.nodeDirection.send) then
                 
-    --             local nodeCircuitNetwork = node.worldEntity.get_circuit_network(wire)
+                local nodeCircuitNetwork = node.worldEntity.get_circuit_network(wire)
 
-    --             if (nodeCircuitNetwork) then
-    --                 self.MergeSignals(signals, nodeCircuitNetwork.signals, modData.constants.signalMergeMode.add)
-    --             end
-    --         end
-    --     end
+                if (nodeCircuitNetwork) then
+                    self.MergeSignals(signals, nodeCircuitNetwork.signals)
+                end
+            end
+        end
 
-    --     return signals
-    -- end
+        return signals
+    end
 
 
-    -- function self.Update(bus, channelName)
+    function self.Update(bus, channelName)
 
-    --     local signals = {}
+        local signals = {}
 
-    --     self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.red, bus, channelName), modData.constants.signalMergeMode.add)
-    --     self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.green, bus, channelName), modData.constants.signalMergeMode.add)
+        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.red, bus, channelName))
+        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.green, bus, channelName))
 
-    --     self.SetOutputOnReceivers(signals, bus, channelName)
+        self.SetOutputOnReceivers(signals, bus, channelName)
 
-    -- end
+    end
 
 
     return self

@@ -14,54 +14,59 @@ local function BusNode(modData)
     end
 
 
-    function self.MergeSignals(firstSet, secondSet)
+    function self.GetDelimitedCount(count)
+        return math.min(2147483647, math.max(-2147483647, count))
+    end
 
-        if (not secondSet or #secondSet == 0) then
-            return
-        end
 
-        local countsBySignalId = {}
+    -- function self.MergeSignals(firstSet, secondSet)
 
-        for _, signal in pairs(firstSet) do
-            local signalSpec = signal.signal
-            countsBySignalId[self.StringKeyFromSignalSpec(signalSpec)] = { count = signal.count, signalSpec = signalSpec }
-        end
+    --     if (not secondSet or #secondSet == 0) then
+    --         return
+    --     end
 
-        for _, signal in pairs(secondSet) do
+    --     local countsBySignalId = {}
+
+    --     for _, signal in pairs(firstSet) do
+    --         local signalSpec = signal.signal
+    --         countsBySignalId[self.StringKeyFromSignalSpec(signalSpec)] = { count = signal.count, signalSpec = signalSpec }
+    --     end
+
+    --     for _, signal in pairs(secondSet) do
             
-            local signalSpec = signal.signal
-            local signalKey = self.StringKeyFromSignalSpec(signalSpec)
-            if (countsBySignalId[signalKey] ~= nil) then
-                countsBySignalId[signalKey].count = countsBySignalId[signalKey].count  + signal.count
-            else
-                countsBySignalId[signalKey] = { count = signal.count, signalSpec = signalSpec }
-            end
-        end
+    --         local signalSpec = signal.signal
+    --         local signalKey = self.StringKeyFromSignalSpec(signalSpec)
+    --         if (countsBySignalId[signalKey] ~= nil) then
+    --             countsBySignalId[signalKey].count = self.GetDelimitedCount(countsBySignalId[signalKey].count  + signal.count)
+    --         else
+    --             countsBySignalId[signalKey] = { count = signal.count, signalSpec = signalSpec }
+    --         end
+    --     end
 
-        for i, signal in ipairs(firstSet) do
+    --     for i, signal in ipairs(firstSet) do
 
-            local signalSpec = signal.signal
-            local signalKey = self.StringKeyFromSignalSpec(signalSpec)
-            signal.count = countsBySignalId[signalKey].count
-            countsBySignalId[signalKey] = nil
-        end
+    --         local signalSpec = signal.signal
+    --         local signalKey = self.StringKeyFromSignalSpec(signalSpec)
+    --         signal.count = countsBySignalId[signalKey].count
+    --         countsBySignalId[signalKey] = nil
+    --     end
 
-        for signalKeyString, signalInfo in pairs(countsBySignalId) do
-            firstSet[#firstSet+1] = { signal = signalInfo.signalSpec, count = signalInfo.count }
-        end
-    end
+    --     for signalKeyString, signalInfo in pairs(countsBySignalId) do
+    --         firstSet[#firstSet+1] = { signal = signalInfo.signalSpec, count = signalInfo.count }
+    --     end
+    -- end
 
 
-    function self.GetConstantCombinatorParametersFromSignals(signals)
+    -- function self.GetConstantCombinatorParametersFromSignals(signals)
 
-        local constantCombinatorParameters = {}
+    --     local constantCombinatorParameters = {}
 
-        for i, signal in ipairs(signals) do
-            constantCombinatorParameters[#constantCombinatorParameters+1] = { signal = signal.signal, count = signal.count, index = #constantCombinatorParameters+1 }
-        end
+    --     for i, signal in ipairs(signals) do
+    --         constantCombinatorParameters[#constantCombinatorParameters+1] = { signal = signal.signal, count = signal.count, index = #constantCombinatorParameters+1 }
+    --     end
 
-        return constantCombinatorParameters
-    end
+    --     return constantCombinatorParameters
+    -- end
 
 
     function self.SetOutputSignals(node, signals)

@@ -22,7 +22,7 @@ local modData =
   constants = 
   {  
     modPrefix = "WLCBKX_",
-    signalMergeMode = {add = 1, substract = 2},
+    nodeDirection = {send = 1, receive = 2},
     guiElementNames = {}
   },
   persisted = 
@@ -45,7 +45,7 @@ modData.tools =
     modData.persisted.nodes[entityId] = 
     {
       worldEntity = entity,
-      settings = { bus = "", channel = "", send = true, receive = true }
+      settings = { bus = "", channel = "", direction = modData.constants.nodeDirection.receive }
     }
   
   end
@@ -109,8 +109,7 @@ modData.constants.guiElementNames["moveChannelUpButton"] = modData.constants.mod
 modData.constants.guiElementNames["moveChannelDownButton"] = modData.constants.modPrefix .. "MoveChannelDownButton"
 modData.constants.guiElementNames["newChannelTextfield"] = modData.constants.modPrefix .. "NewChannelTextfield"
 modData.constants.guiElementNames["newBusTextfield"] = modData.constants.modPrefix .. "NewBusTextfield"
-modData.constants.guiElementNames["sendCheckbox"] = modData.constants.modPrefix .. "SendCheckbox"
-modData.constants.guiElementNames["receiveCheckbox"] = modData.constants.modPrefix .. "ReceiveCheckbox"
+modData.constants.guiElementNames["directionDropdown"] = modData.constants.modPrefix .. "DirectionDropdown"
 modData.constants.guiElementNames["bussesTab"] = modData.constants.modPrefix .. "BussesTab"
 
 
