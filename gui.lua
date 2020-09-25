@@ -1,23 +1,37 @@
 local Tools = require "tools"
 local ConfigGui = require "config_gui"
 local EntityGui = require "entity_gui"
+local BusAssignGui = require "bus_assign_gui"
 
 
 local function Gui(modData)
 
     local self =
     {
+        guiElementNames = 
+        {
+          modGuiButton = modData.constants.modPrefix .. "WirelessCircuitBusConfigButton"
 
+        },
+        guiElements = {}
     }
 
     local modData = modData
     local tools = Tools()
     local configGui = ConfigGui(modData)
     local entityGui = EntityGui(modData)
+    local busAssignGui = BusAssignGui(modData)
+
+
+    function self.GetBusAssignGui()
+
+      return busAssignGui
+
+    end
 
 
     function self.HandleModGuiButton(event)
-        if (event.element.name ~= modData.constants.guiElementNames.modGuiButton) then
+        if (event.element.name ~= self.guiElementNames.modGuiButton) then
           return false
         end
       
@@ -33,14 +47,15 @@ local function Gui(modData)
 
         tools.CallEventHandler(event, {
             configGui.HandleOnGuiSelectionStateChanged,
-            entityGui.HandleOnGuiSelectionStateChanged
+            entityGui.HandleOnGuiSelectionStateChanged,
+            busAssignGui.HandleOnGuiSelectionStateChanged
         })
 
     end
 
 
     function self.AddModGuiButton(player)
-        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = modData.constants.guiElementNames.modGuiButton, sprite = "entity/small-biter", style = mod_gui.button_style}
+        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = self.guiElementNames.modGuiButton, sprite = "entity/small-biter", style = mod_gui.button_style}
           
       end
       
@@ -51,7 +66,8 @@ local function Gui(modData)
         return tools.CallEventHandler(event, {
             self.HandleModGuiButton,
             configGui.HandleOnGuiClick,
-            entityGui.HandleOnGuiClick
+            entityGui.HandleOnGuiClick,
+            busAssignGui.HandleOnGuiClick
         })
       
       end

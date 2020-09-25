@@ -1,4 +1,4 @@
-local function BusNode(modData)
+local function BusNodeClass(modData)
 
     local self =
     {
@@ -7,16 +7,31 @@ local function BusNode(modData)
     local modData = modData
 
 
-    function self.StringKeyFromSignalSpec(signalSpec)
+    -- function self.StringKeyFromSignalSpec(signalSpec)
 
-        return signalSpec.type .. signalSpec.name
+    --     return signalSpec.type .. signalSpec.name
+
+    -- end
+
+
+    function self.SetBus(busNodeData, busName)
+
+        local busNodeSettings = busNodeData.settings
+        if (busName == "") then
+          if (busNodeSettings.bus:len() > 0) then
+            modData.persisted.busses[busNodeSettings.bus].nodes[busNodeData.worldEntity.unit_number] = nil
+            busNodeData.bus = ""
+          end
+        else
+          busNodeSettings.bus = busName
+          modData.persisted.busses[busName].nodes[busNodeData.worldEntity.unit_number] = busNodeData
+        end
 
     end
 
-
-    function self.GetDelimitedCount(count)
-        return math.min(2147483647, math.max(-2147483647, count))
-    end
+    -- function self.GetDelimitedCount(count)
+    --     return math.min(2147483647, math.max(-2147483647, count))
+    -- end
 
 
     -- function self.MergeSignals(firstSet, secondSet)
@@ -69,44 +84,44 @@ local function BusNode(modData)
     -- end
 
 
-    function self.SetOutputSignals(node, signals)
+    -- function self.SetOutputSignals(node, signals)
 
-        node.worldEntity.get_or_create_control_behavior().parameters = { parameters = self.GetConstantCombinatorParametersFromSignals(signals) }
+    --     node.worldEntity.get_or_create_control_behavior().parameters = { parameters = self.GetConstantCombinatorParametersFromSignals(signals) }
 
-    end
-
-
-    function self.MergeWireSignals(signals, node, wire)
-        local nodeCircuitNetwork = node.worldEntity.get_circuit_network(wire)
-        if (nodeCircuitNetwork) then
-            self.MergeSignals(signals, nodeCircuitNetwork.signals)
-        end
-    end
+    -- end
 
 
-    function self.GetSignalsFromCorrespondingSenders(node, bus)
-
-        local signals = {}
-
-        for _, busNode in pairs(bus.nodes) do
-            if (busNode.settings.send
-                and node.worldEntity.unit_number ~= busNode.worldEntity.unit_number
-                and node.settings.channel == busNode.settings.channel) then
-
-                    self.MergeWireSignals(signals, busNode, defines.wire_type.green)
-                    self.MergeWireSignals(signals, busNode, defines.wire_type.red)
-            end
-        end
-
-        return signals
-    end
+    -- function self.MergeWireSignals(signals, node, wire)
+    --     local nodeCircuitNetwork = node.worldEntity.get_circuit_network(wire)
+    --     if (nodeCircuitNetwork) then
+    --         self.MergeSignals(signals, nodeCircuitNetwork.signals)
+    --     end
+    -- end
 
 
-    function self.Update(node, bus)
-        local signals = self.GetSignalsFromCorrespondingSenders(node, bus)
+    -- function self.GetSignalsFromCorrespondingSenders(node, bus)
 
-        self.SetOutputSignals(node, signals)
-    end
+    --     local signals = {}
+
+    --     for _, busNode in pairs(bus.nodes) do
+    --         if (busNode.settings.send
+    --             and node.worldEntity.unit_number ~= busNode.worldEntity.unit_number
+    --             and node.settings.channel == busNode.settings.channel) then
+
+    --                 self.MergeWireSignals(signals, busNode, defines.wire_type.green)
+    --                 self.MergeWireSignals(signals, busNode, defines.wire_type.red)
+    --         end
+    --     end
+
+    --     return signals
+    -- end
+
+
+    -- function self.Update(node, bus)
+    --     local signals = self.GetSignalsFromCorrespondingSenders(node, bus)
+
+    --     self.SetOutputSignals(node, signals)
+    -- end
 
 
     return self
@@ -114,4 +129,4 @@ local function BusNode(modData)
 end
 
 
-return BusNode
+return BusNodeClass

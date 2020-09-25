@@ -32,8 +32,8 @@ local function Tools()
     end
 
 
-    function self.BusNameFromBusDisplayString(busDisplayString)
-        return busDisplayString:sub(1, busDisplayString:find(" - ") - 1)
+    function self.KeyFromDisplayString(displayString)
+        return displayString:sub(1, displayString:find(" ") - 1)
     end
 
     

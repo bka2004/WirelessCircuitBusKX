@@ -1,11 +1,22 @@
 local Tools = require "tools"
+local BusNodeClass = require "bus_node"
 
 
 local function EntityGui(modData)
 
     local self =
     {
-
+      guiElementNames = 
+      {
+        closeButton = modData.constants.modPrefix .. "EntityGuiCloseButton",
+        okButton = modData.constants.modPrefix .. "EntityGuiOkButton",
+        gui = modData.constants.modPrefix .. "EntityGui",
+        busOfEntityDropdown = modData.constants.modPrefix .. "BusOfEntityDropDown",
+        channelOfEntityDropdown = modData.constants.modPrefix .. "ChannelOfEntityDropDown",
+        directionDropdown = modData.constants.modPrefix .. "DirectionDropdown"
+      },
+      guiElements = {},
+      editedEntity = {}
     }
 
     local modData = modData
@@ -16,7 +27,7 @@ local function EntityGui(modData)
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"EntityGui.Title"}, style = "frame_title"}
         flow.add{type = "empty-widget", style = "wirelessdragwidget"}.drag_target = dragTarget
-        flow.add{type = "sprite-button", name = modData.constants.guiElementNames.entityGuiCloseButton, sprite = "utility/close_white", style = "frame_action_button"}
+        flow.add{type = "sprite-button", name = self.guiElementNames.closeButton, sprite = "utility/close_white", style = "frame_action_button"}
       end
       
       
@@ -24,9 +35,9 @@ local function EntityGui(modData)
 
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"EntityGui.BusLabel"}}
-        modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.busOfEntityDropdown, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)}
+        self.guiElements[self.guiElementNames.busOfEntityDropdown] = flow.add{type = "drop-down", name = self.guiElementNames.busOfEntityDropdown, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)}
         flow.add{type = "label", caption = {"EntityGui.ChannelLabel"}}
-        modData.volatile.guiElements[modData.constants.guiElementNames.channelOfEntityDropdown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.channelOfEntityDropdown, items = {}}
+        self.guiElements[self.guiElementNames.channelOfEntityDropdown] = flow.add{type = "drop-down", name = self.guiElementNames.channelOfEntityDropdown, items = {}}
 
         self.UpdateBusOfEntityDropdown()
         self.UpdateChannelOfEntityDropdown()
@@ -37,7 +48,7 @@ local function EntityGui(modData)
       
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"EntityGui.DirectionLabel"}}
-        modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown] = flow.add{type = "drop-down", name = modData.constants.guiElementNames.directionDropdown, items = {}}
+        self.guiElements[self.guiElementNames.directionDropdown] = flow.add{type = "drop-down", name = self.guiElementNames.directionDropdown, items = {}}
       
         self.UpdateDirectionDropdown()
       
@@ -47,14 +58,14 @@ local function EntityGui(modData)
       function self.AddOkButtonToEntityGui(parent)
       
         local flow = parent.add{type = "flow", direction = "horizontal"}
-        modData.volatile.guiElements[modData.constants.guiElementNames.entityGuiOkButton] = flow.add{type = "button", name = modData.constants.guiElementNames.entityGuiOkButton, caption = {"EntityGui.Ok"}}
+        self.guiElements[self.guiElementNames.okButton] = flow.add{type = "button", name = self.guiElementNames.okButton, caption = {"EntityGui.Ok"}}
       
       end
 
 
       function self.GetNodeForEditedEntity()
 
-        local uniqueEntityId = modData.volatile.editedEntity.unit_number
+        local uniqueEntityId = self.editedEntity.unit_number
         return modData.tools.getBusNode(uniqueEntityId)
 
       end
@@ -81,11 +92,11 @@ local function EntityGui(modData)
 
     function self.UpdateBusOfEntityDropdown()
 
-        local dropDown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
+        local dropDown = self.guiElements[self.guiElementNames.busOfEntityDropdown]
         dropDown.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
         local busOfEntity = self.GetBusOfEditedEntity()
         if (busOfEntity:len() > 0) then
-          dropDown.selected_index = tools.GetIndexOfDropdownItem(dropDown.items, busOfEntity, tools.BusNameFromBusDisplayString)
+          dropDown.selected_index = tools.GetIndexOfDropdownItem(dropDown.items, busOfEntity, tools.KeyFromDisplayString)
         else
           dropDown.selected_index = 0
         end
@@ -95,7 +106,7 @@ local function EntityGui(modData)
 
     function self.UpdateDirectionDropdown()
 
-      local directionDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown]
+      local directionDropdown = self.guiElements[self.guiElementNames.directionDropdown]
       directionDropdown.items = { "Send", "Receive"}
       
       local busNodeSettings = self.GetNodeForEditedEntity().settings
@@ -109,8 +120,8 @@ local function EntityGui(modData)
 
 
     function self.UpdateChannelOfEntityDropdown()
-          local channelDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.channelOfEntityDropdown]
-          local busDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
+          local channelDropDown = self.guiElements[self.guiElementNames.channelOfEntityDropdown]
+          local busDropDown = self.guiElements[self.guiElementNames.busOfEntityDropdown]
 
           local channelSet = nil
           if (busDropDown.selected_index == 0) then
@@ -119,7 +130,7 @@ local function EntityGui(modData)
               channelSet = modData.persisted.channelSets[modData.persisted.busses[busOfEntity].channelSet]
             end
           else
-            channelSet = self.GetChannelSetByBusName(tools.BusNameFromBusDisplayString(busDropDown.items[busDropDown.selected_index]))
+            channelSet = self.GetChannelSetByBusName(tools.KeyFromDisplayString(busDropDown.items[busDropDown.selected_index]))
           end
 
           if (channelSet == nil) then
@@ -132,21 +143,21 @@ local function EntityGui(modData)
 
       
       function self.Close()
-        local frame = modData.volatile.guiElements[modData.constants.guiElementNames.entityGui]
+        local frame = self.guiElements[self.guiElementNames.gui]
         if (not frame) then
           return
         end
 
-        modData.volatile.editedEntity = nil
+        self.editedEntity = nil
       
-        modData.volatile.guiElements = {}
+        self.guiElements = {}
         frame.destroy()
       end
 
 
       function self.HandleCloseButton(event)
 
-        if (event.element.name ~= modData.constants.guiElementNames.entityGuiCloseButton) then
+        if (event.element.name ~= self.guiElementNames.closeButton) then
             return false
         end
 
@@ -158,7 +169,7 @@ local function EntityGui(modData)
 
       function self.HandleBusDropDownSelectionChanged(event)
 
-        if (event.element.name ~= modData.constants.guiElementNames.busOfEntityDropdown) then
+        if (event.element.name ~= self.guiElementNames.busOfEntityDropdown) then
           return
         end
 
@@ -167,27 +178,25 @@ local function EntityGui(modData)
       end
       
 
-      function ApplySelectedBus(busNode)
+      function ApplySelectedBus(busNodeData)
 
-        local busNodeSettings = busNode.settings
-        local busDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.busOfEntityDropdown]
+        local busDropdown = self.guiElements[self.guiElementNames.busOfEntityDropdown]
         local selectedBusIndex = busDropdown.selected_index
-        if (selectedBusIndex == 0) then
-          if (busNodeSettings.bus:len() > 0) then
-            modData.persisted.busses[busNodeSettings.bus].nodes[busNode.worldEntity.unit_number] = nil
-            busNode.bus = ""
-          end
-        else
-          local selectedBus = tools.BusNameFromBusDisplayString(busDropdown.items[selectedBusIndex])
-          busNodeSettings.bus = selectedBus
-          modData.persisted.busses[selectedBus].nodes[busNode.worldEntity.unit_number] = busNode
+
+        local selectedBus = ""
+        if (selectedBusIndex ~= 0) then
+          selectedBus = tools.KeyFromDisplayString(busDropdown.items[selectedBusIndex])
         end
+
+        local busNode = BusNodeClass(modData)
+        busNode.SetBus(busNodeData, selectedBus)
+
       end
 
 
       function ApplySelectedChannel(busNode)
 
-        local channelDropDown = modData.volatile.guiElements[modData.constants.guiElementNames.channelOfEntityDropdown]
+        local channelDropDown = self.guiElements[self.guiElementNames.channelOfEntityDropdown]
 
         if (channelDropDown.selected_index ~= 0) then
           busNode.settings.channel = channelDropDown.items[channelDropDown.selected_index]
@@ -198,7 +207,7 @@ local function EntityGui(modData)
 
       function ApplySendReceiveStats(busNode)
      
-        local directionDropdown = modData.volatile.guiElements[modData.constants.guiElementNames.directionDropdown]
+        local directionDropdown = self.guiElements[self.guiElementNames.directionDropdown]
 
         if (directionDropdown.selected_index == 1) then
           busNode.settings.direction = modData.constants.nodeDirection.send
@@ -211,7 +220,7 @@ local function EntityGui(modData)
 
       function self.HandleEntityOkButton(event)
 
-        if (event.element.name ~= modData.constants.guiElementNames.entityGuiOkButton) then
+        if (event.element.name ~= self.guiElementNames.okButton) then
           return false
         end
       
@@ -232,10 +241,10 @@ local function EntityGui(modData)
 
         self.Close() -- in case another entity is already open
 
-        modData.volatile.editedEntity = entity
+        self.editedEntity = entity
 
-        local frame = player.gui.screen.add{type = "frame", name = modData.constants.guiElementNames.entityGui, direction = "vertical"}
-        modData.volatile.guiElements[modData.constants.guiElementNames.entityGui] = frame
+        local frame = player.gui.screen.add{type = "frame", name = self.guiElementNames.gui, direction = "vertical"}
+        self.guiElements[self.guiElementNames.gui] = frame
         local verticalFlow = frame.add{type = "flow", direction = "vertical"}
         self.AddTitleBarToEntityGui(verticalFlow, frame)
       
@@ -257,7 +266,7 @@ local function EntityGui(modData)
     end
 
 
-      function self.HandleOnGuiClick(event)
+    function self.HandleOnGuiClick(event)
 
         return tools.CallEventHandler(event, {
             self.HandleEntityOkButton,

@@ -4,6 +4,7 @@ local Tools = require "tools"
 local Gui = require "gui"
 local Ghosts = require "ghosts"
 local Bus = require "bus"
+local SelectionTool = require "selection_tool"
 
 
 
@@ -87,37 +88,13 @@ end
 
 
 
-modData.constants.guiElementNames["modGuiButton"]  = modData.constants.modPrefix .. "WirelessCircuitBusConfigButton"
-modData.constants.guiElementNames["configGuiCloseButton"] = modData.constants.modPrefix .. "ChannelSetGuiCloseButton"
-modData.constants.guiElementNames["entityGuiCloseButton"] = modData.constants.modPrefix .. "EntityGuiCloseButton"
-modData.constants.guiElementNames["entityGuiOkButton"] = modData.constants.modPrefix .. "EntityGuiOkButton"
-modData.constants.guiElementNames["configGui"] = modData.constants.modPrefix .. "ConfigtGui"
-modData.constants.guiElementNames["entityGui"] = modData.constants.modPrefix .. "EntityGui"
-modData.constants.guiElementNames["channelSetDropDown"] = modData.constants.modPrefix .. "ChannelSetDropDown"
-modData.constants.guiElementNames["chooseChannelSetDropDown"] = modData.constants.modPrefix .. "ChooseChannelSetDropDown"
-modData.constants.guiElementNames["busOfEntityDropdown"] = modData.constants.modPrefix .. "BusOfEntityDropDown"
-modData.constants.guiElementNames["channelOfEntityDropdown"] = modData.constants.modPrefix .. "ChannelOfEntityDropDown"
-modData.constants.guiElementNames["channelSetCreateButton"] = modData.constants.modPrefix .. "ChannelSetCreateButton"
-modData.constants.guiElementNames["channelAddButton"] = modData.constants.modPrefix .. "ChannelAddButton"
-modData.constants.guiElementNames["busAddButton"] = modData.constants.modPrefix .. "BusAddButton"
-modData.constants.guiElementNames["channelSetCreateTextfield"] = modData.constants.modPrefix .. "ChannelSetCreateTextfield"
-modData.constants.guiElementNames["channelListBox"] = modData.constants.modPrefix .. "ChannelListBox"
-modData.constants.guiElementNames["busListBox"] = modData.constants.modPrefix .. "BusListBox"
-modData.constants.guiElementNames["removeChannelButton"] = modData.constants.modPrefix .. "ChannelRemoveButton"
-modData.constants.guiElementNames["removeBusButton"] = modData.constants.modPrefix .. "BusRemoveButton"
-modData.constants.guiElementNames["moveChannelUpButton"] = modData.constants.modPrefix .. "MoveChannelUpButton"
-modData.constants.guiElementNames["moveChannelDownButton"] = modData.constants.modPrefix .. "MoveChannelDownButton"
-modData.constants.guiElementNames["newChannelTextfield"] = modData.constants.modPrefix .. "NewChannelTextfield"
-modData.constants.guiElementNames["newBusTextfield"] = modData.constants.modPrefix .. "NewBusTextfield"
-modData.constants.guiElementNames["directionDropdown"] = modData.constants.modPrefix .. "DirectionDropdown"
-modData.constants.guiElementNames["bussesTab"] = modData.constants.modPrefix .. "BussesTab"
-
 
 
 
 local gui = Gui(modData)
 local ghosts = Ghosts(modData)
 local bus = Bus(modData)
+local selectionTool = SelectionTool(modData, gui)
 
 
 
@@ -223,4 +200,5 @@ script.on_event(defines.events.on_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_robot_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_entity_settings_pasted, OnSettingsPasted)
 script.on_event(defines.events.on_player_setup_blueprint, OnBlueprintSetup)
+script.on_event(defines.events.on_player_selected_area, selectionTool.OnSelection)
 
