@@ -6,6 +6,7 @@ local function BussesGui(modData)
         guiElementNames =
         {
           busAddButton = modData.constants.modPrefix .. "BusAddButton",
+          busRemoveButton = modData.constants.modPrefix .. "BusRemoveButton",
           newBusTextfield = modData.constants.modPrefix .. "NewBusTextfield",
           chooseChannelSetDropDown = modData.constants.modPrefix .. "ChooseChannelSetDropDown",
           busListBox = modData.constants.modPrefix .. "BusListBox"
@@ -39,8 +40,22 @@ local function BussesGui(modData)
         busTextfield.text = ""
       
         self.UpdateBusList()
-        --local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
-        --busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
+      
+        return true
+      end
+      
+
+      function self.HandleBusRemoveButton(event)
+        if (event.element.name ~= self.guiElementNames.busRemoveButton) then
+          return false
+        end
+      
+        local busListBox = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)       
+        local busToRemove = tools.KeyFromDisplayString(busListBox.items[busListBox.selected_index])
+
+        modData.persisted.busses[busToRemove] = nil
+     
+        self.UpdateBusList()
       
         return true
       end
@@ -69,7 +84,7 @@ local function BussesGui(modData)
         local outerFlow = parent.add{type = "flow", direction = "horizontal"}
         tools.CreateAndRememberGuiElement("busses", outerFlow, {type = "list-box", name = self.guiElementNames.busListBox, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)})
         local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
-        innerFlow.add{type = "button", name = self.guiElementNames.removeBusButton, caption = {"ConfigGui.Remove"}}
+        innerFlow.add{type = "button", name = self.guiElementNames.busRemoveButton, caption = {"ConfigGui.Remove"}}
 
     end
       
@@ -100,7 +115,8 @@ local function BussesGui(modData)
     function self.HandleOnGuiClick(event)
 
         return tools.CallEventHandler(event, {
-            self.HandleBusAddButton
+            self.HandleBusAddButton,
+            self.HandleBusRemoveButton
         })
         
     end
