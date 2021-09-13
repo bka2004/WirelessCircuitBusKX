@@ -5,10 +5,10 @@ local Gui = require "gui"
 local Ghosts = require "ghosts"
 local Bus = require "bus"
 local SelectionTool = require "selection_tool"
+local Factories = require "factories"
 
 
 
-local tools = Tools()
 
 string.starts_with = function (self, substring)
   return self:sub(1, substring:len()) == substring
@@ -31,36 +31,46 @@ local modData =
     channelSets = {},
     busses = {},
     nodes = {},
-  },
-  volatile = 
-  {
-    guiElements = {},
+    playerSettings = {},
+    guiElements = { config = {}, entity = {}, channelSet = {}, busses = {}, busAssign = {}},
     editedEntity = nil
-  }
+  },
 }
+
+local tools = Tools(modData)
+local factories = Factories(modData)
 
 modData.tools =
 {
   registerNode = function (entityId, entity)
 
-    modData.persisted.nodes[entityId] = 
-    {
-      worldEntity = entity,
-      settings = { bus = "", channel = "", direction = modData.constants.nodeDirection.receive }
-    }
+    modData.persisted.nodes[entityId] = factories.CreateBusNodeData(entity)
   
   end
 }
   
 modData.tools.registerNodeWithSettings = function(entityId, entity, settings)
 
-  modData.persisted.nodes[entityId] = { worldEntity = entity, settings = settings }
+  modData.persisted.nodes[entityId] = factories.CreateBusNodeDataWithSettings(entity, settings)
 
 end
 
 modData.tools.getBusNode = function(nodeId)
 
   return modData.persisted.nodes[nodeId]
+
+end
+
+modData.tools.getOrCreatePlayerSettings = function(playerId)
+
+  local playerSettings = modData.persisted.playerSettings[playerId]
+  if (playerSettings) then
+    return playerSettings
+  end
+
+  modData.persisted.playerSettings[playerId] = factories.CreatePlayerData(playerId)
+
+  return modData.persisted.playerSettings[playerId]
 
 end
 
@@ -130,7 +140,7 @@ local function OnTick(event)
     ghosts.CheckPendingGhostsForRevival()
 
     for busName, _ in pairs(modData.persisted.busses) do
-      bus.Update(busName)
+      bus.Update(busName) -- #todo avoid second lookup
     end
   end
 
@@ -187,6 +197,10 @@ local function OnSettingsPasted(event)
 
 end
 
+local function EventTest(event)
+  local x = "y"
+end
+
 
 script.on_init(OnInit)
 script.on_load(OnLoad)
@@ -201,4 +215,9 @@ script.on_event(defines.events.on_robot_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_entity_settings_pasted, OnSettingsPasted)
 script.on_event(defines.events.on_player_setup_blueprint, OnBlueprintSetup)
 script.on_event(defines.events.on_player_selected_area, selectionTool.OnSelection)
+script.on_event(defines.events.on_pre_player_removed, EventTest)
+script.on_event(defines.events.on_pre_player_left_game, EventTest)
+script.on_event(defines.events.on_player_removed, EventTest)
+script.on_event(defines.events.on_player_left_game, EventTest)
+
 

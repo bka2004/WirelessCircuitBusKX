@@ -1,7 +1,6 @@
-local function ChannelSet(name)
+local function ChannelSet()
     local self =
     {
-        name = name,
         channels = {}
     }
 

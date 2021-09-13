@@ -11,11 +11,10 @@ local function BussesGui(modData)
           busListBox = modData.constants.modPrefix .. "BusListBox"
 
         },
-        guiElements = {}
     }
 
     local modData = modData
-    local tools = Tools()
+    local tools = Tools(modData)
 
 
     function self.HandleBusAddButton(event)
@@ -23,13 +22,13 @@ local function BussesGui(modData)
           return false
         end
       
-        local busTextfield = self.guiElements[self.guiElementNames.newBusTextfield]
+        local busTextfield = tools.RetrieveGuiElement("busses", self.guiElementNames.newBusTextfield)
         local busName = busTextfield.text
         if (busName:len() == 0) then
           return true
         end
       
-        local channelSetDropDown = self.guiElements[self.guiElementNames.chooseChannelSetDropDown]
+        local channelSetDropDown = tools.RetrieveGuiElement("busses", self.guiElementNames.chooseChannelSetDropDown)
         local selectedIndex = channelSetDropDown.selected_index
         if (selectedIndex == 0) then
           return true
@@ -39,37 +38,46 @@ local function BussesGui(modData)
         modData.persisted.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
         busTextfield.text = ""
       
-        local busList = self.guiElements[self.guiElementNames.busListBox]
-        busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
+        self.UpdateBusList()
+        --local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
+        --busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
       
         return true
       end
       
+
+    function self.UpdateBusList()
+        local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
+        busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
+    end 
+
       
     function self.AddBusSelectorToBussesGui(parent)
 
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.BusNameLabel"}}
-        self.guiElements[self.guiElementNames.newBusTextfield] = flow.add{type = "textfield", name = self.guiElementNames.newBusTextfield}
+        tools.CreateAndRememberGuiElement("busses", flow, {type = "textfield", name = self.guiElementNames.newBusTextfield})
         flow.add{type = "label", caption = {"ConfigGui.ChannelSetLabel"}}
-        self.guiElements[self.guiElementNames.chooseChannelSetDropDown] = flow.add{type = "drop-down", name = self.guiElementNames.chooseChannelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)}
-        self.guiElements[self.guiElementNames.busAddButton] = flow.add{type = "button", name = self.guiElementNames.busAddButton, caption = {"ConfigGui.Add"}}
+        tools.CreateAndRememberGuiElement("busses", flow, {type = "drop-down", name = self.guiElementNames.chooseChannelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)})
+        tools.CreateAndRememberGuiElement("busses", flow, {type = "button", name = self.guiElementNames.busAddButton, caption = {"ConfigGui.Add"}})
 
     end
       
       
     function self.AddBusListToBussesGui(parent)
+
         local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-        self.guiElements[self.guiElementNames.busListBox] = outerFlow.add{type = "list-box", name = self.guiElementNames.busListBox, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)}
+        tools.CreateAndRememberGuiElement("busses", outerFlow, {type = "list-box", name = self.guiElementNames.busListBox, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)})
         local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
         innerFlow.add{type = "button", name = self.guiElementNames.removeBusButton, caption = {"ConfigGui.Remove"}}
+
     end
       
 
     function self.Update()
 
-        self.guiElements[self.guiElementNames.chooseChannelSetDropDown].items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
-
+        tools.RetrieveGuiElement("busses", self.guiElementNames.chooseChannelSetDropDown).items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
+        self.UpdateBusList()
     end
 
       

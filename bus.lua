@@ -21,6 +21,9 @@ local function Bus(modData)
 
 
         local channelSet = modData.persisted.channelSets[bus.channelSet]
+        if (not channelSet) then
+            return
+        end
 
         for _, channelName in ipairs(channelSet.channels) do
             channel.Update(bus, channelName)

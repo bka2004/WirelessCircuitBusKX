@@ -1,6 +1,12 @@
-local function Tools()
+local Factories = require "factories"
+
+
+local function Tools(modData)
 
     local self = {}
+
+    local modData = modData
+    local factories = Factories(modData)
 
     function self.ChannelSetsAsLocalizedStringList(channelSets)
         local localizeStringList = {}
@@ -25,7 +31,13 @@ local function Tools()
     function self.BussesAsLocalizedStringList(busses, channelSets)
         local localizeStringList = {}
         for name, bus in pairs(busses) do
-          localizeStringList[#localizeStringList + 1] = name .. " - " .. channelSets[bus.channelSet].name -- {"", name .. " - " .. channelSets[bus.channelSet].name}
+            local usedChannelSet = channelSets[bus.channelSet]
+            if (not usedChannelSet) then
+                localizeStringList[#localizeStringList + 1] = name .. " - <error: referenced channelset not found:'" .. bus.channelSet .. ">"
+            else
+                localizeStringList[#localizeStringList + 1] = name .. " - " .. bus.channelSet
+            end
+
         end
       
         return localizeStringList
@@ -86,6 +98,65 @@ local function Tools()
             copy = orig
         end
         return copy
+    end
+
+
+    function self.GetDefaultGuiPositionFor(playerId)
+
+        local x = game.players[playerId].display_resolution.width / 2 - 100
+        local y = game.players[playerId].display_resolution.height / 2 - 50
+
+        return {x = x, y = y}
+
+    end
+
+
+    function self.GetGuiPosition(playerId, guiType)
+
+        local playerSettings = modData.persisted.playerSettings[playerId]
+        if (playerSettings) then
+            local position = playerSettings.guiPositions[guiType]
+            if (position) then
+                return position
+            end
+        end
+
+        return self.GetDefaultGuiPositionFor(playerId)
+
+    end
+
+
+    function self.SaveGuiPosition(position, playerId, guiType)
+
+
+        local playerSettings = modData.tools.getOrCreatePlayerSettings(playerId)
+
+        playerSettings.guiPositions[guiType] = position
+
+    end
+
+
+    function self.CreateAndRememberGuiElement(guiType, parent, elementSpec)
+
+        local guiElement = parent.add(elementSpec)
+        modData.persisted.guiElements[guiType][elementSpec.name] = guiElement
+
+        return guiElement
+
+    end
+
+
+    function self.RetrieveGuiElement(guiType, elementName)
+
+        return modData.persisted.guiElements[guiType][elementName]
+
+    end
+
+
+    function self.ForgetGuiElements(guiType)
+
+        modData.persisted.guiElements[guiType] = {}
+        
     end
 
 

@@ -12,13 +12,13 @@ local function ConfigGui(modData)
           gui = modData.constants.modPrefix .. "ConfigtGui",
           bussesTab = modData.constants.modPrefix .. "BussesTab",
         },
-        guiElements = {}
+        guiElements = modData.persisted.guiElements.config
     }
 
     local modData = modData
     local channelSetGui = ChannelSetGui(modData)
     local bussesGui = BussesGui(modData)
-    local tools = Tools()
+    local tools = Tools(modData)
 
 
     function self.AddTitleBar(parent, dragTarget)
@@ -33,8 +33,8 @@ local function ConfigGui(modData)
       
     function self.Show(player)
   
-        local frame = player.gui.screen.add{type = "frame", name = self.guiElementNames.gui, direction = "vertical"}
-        self.guiElements[self.guiElementNames.gui] = frame
+        local frame = tools.CreateAndRememberGuiElement("config", player.gui.screen, {type = "frame", name = self.guiElementNames.gui, direction = "vertical"})
+
         local verticalFlow = frame.add{type = "flow", direction = "vertical"}
         self.AddTitleBar(verticalFlow, frame)
         
@@ -49,20 +49,24 @@ local function ConfigGui(modData)
         channelSetGui.AddChannelSetGui(channelSetFlow)
         tabPane.add_tab(channelSetTab, channelSetFlow)
       
+        frame.location = tools.GetGuiPosition(player.index, "config")
+
         player.opened = frame
-      end
+
+    end
 
 
     function self.HandleCloseButton(event)
       
-        local frame
+        --local frame
         if (event.element.name ~= self.guiElementNames.closeButton) then
             return false
         end
 
-        local frame = self.guiElements[self.guiElementNames.gui]
+        local frame = tools.RetrieveGuiElement("config", self.guiElementNames.gui) --self.guiElements[self.guiElementNames.gui]
       
-        self.guiElements = {}
+        tools.SaveGuiPosition(frame.location, event.player_index, "config")
+        tools.ForgetGuiElements("config")
         frame.destroy()
       
         return true

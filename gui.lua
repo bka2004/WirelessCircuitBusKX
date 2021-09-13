@@ -3,6 +3,9 @@ local ConfigGui = require "config_gui"
 local EntityGui = require "entity_gui"
 local BusAssignGui = require "bus_assign_gui"
 
+local mod_gui = require("mod-gui")
+
+
 
 local function Gui(modData)
 
@@ -17,7 +20,7 @@ local function Gui(modData)
     }
 
     local modData = modData
-    local tools = Tools()
+    local tools = Tools(modData)
     local configGui = ConfigGui(modData)
     local entityGui = EntityGui(modData)
     local busAssignGui = BusAssignGui(modData)
@@ -55,7 +58,7 @@ local function Gui(modData)
 
 
     function self.AddModGuiButton(player)
-        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = self.guiElementNames.modGuiButton, sprite = "entity/small-biter", style = mod_gui.button_style}
+        mod_gui.get_button_flow(player).add{ type = "sprite-button", name = self.guiElementNames.modGuiButton, sprite = "WirelessCircuitBusNode", style = mod_gui.button_style}
           
       end
       

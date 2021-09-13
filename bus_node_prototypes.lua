@@ -10,7 +10,9 @@ local CreateBusNodeEntity = function()
     {
         {
             icon = entity.icon,
-            tint = { r = 1, g = 0, b = 0, a = 0.3 }
+        },
+        {
+            icon = "__WirelessCircuitBusKX__" .. "/icons/WirelessCircuitBusNode.png",
         },
     }
     entity.additional_pastable_entities = {"bus-node"}
@@ -30,7 +32,9 @@ local CreateBusNodeItem = function()
     {
         {
             icon = item.icon,
-            tint = { r = 1, g = 0, b = 0, a = 0.3 }
+        },
+        {
+            icon = "__WirelessCircuitBusKX__" .. "/icons/WirelessCircuitBusNode.png",
         },
     }
 
@@ -46,12 +50,15 @@ local CreateBusNodeRecipe = function()
     recipe.name = "bus-node"
     recipe.ingredients = {{"constant-combinator", 1}, {"radar", 1}}
     recipe.result = "bus-node"
-    recipe.icon_size = 32
+    recipe.icon_size = 64
     recipe.icons =
     {
         {
-            icon = "__base__/graphics/icons/fluid/barreling/empty-barrel.png"
-        },        
+            icon = "__base__/graphics/icons/constant-combinator.png",
+        },
+        {
+            icon = "__WirelessCircuitBusKX__" .. "/icons/WirelessCircuitBusNode.png",
+        },
     }
 
     return recipe

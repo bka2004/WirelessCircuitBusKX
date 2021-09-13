@@ -18,8 +18,6 @@ local function BusAssignGui(modData)
             newBusTextfield = modData.constants.modPrefix .. "NewBusTextfield",
             applyButton = modData.constants.modPrefix .. "ApplyButton",
         },
-        guiElements = {},
-  
     }
 
     local modData = modData
@@ -53,15 +51,15 @@ local function BusAssignGui(modData)
         parent.add{type = "label", caption = {"BusAssignGui.MappingEditLabel"}}
 
         local existingBusFlow = parent.add{type = "flow", direction = "horizontal"}
-        self.guiElements[self.guiElementNames.existingRadioButton] = existingBusFlow.add{type = "radiobutton", state = false, name = self.guiElementNames.existingRadioButton }
+        tools.CreateAndRememberGuiElement("busAssign", existingBusFlow, {type = "radiobutton", state = false, name = self.guiElementNames.existingRadioButton })
         existingBusFlow.add{type = "label", caption = {"BusAssignGui.ExistingBusLabel"}}
-        self.guiElements[self.guiElementNames.existingBusDropdown] = existingBusFlow.add{type = "drop-down", name = self.guiElementNames.existingBusDropdown}
+        tools.CreateAndRememberGuiElement("busAssign", existingBusFlow, {type = "drop-down", name = self.guiElementNames.existingBusDropdown})
 
         local newBusFlow = parent.add{type = "flow", direction = "horizontal"}
-        self.guiElements[self.guiElementNames.newRadioButton] = newBusFlow.add{type = "radiobutton", state = false, name = self.guiElementNames.newRadioButton }
+        tools.CreateAndRememberGuiElement("busAssign", newBusFlow, {type = "radiobutton", state = false, name = self.guiElementNames.newRadioButton })
         newBusFlow.add{type = "label", caption = {"BusAssignGui.NewBusLabel"}}
-        self.guiElements[self.guiElementNames.newBusTextfield] = newBusFlow.add{type = "textfield", name = self.guiElementNames.newBusTextfield}
-        self.guiElements[self.guiElementNames.applyButton] = newBusFlow.add{type = "button", caption = { "BusAssignGui.Apply"}, name = self.guiElementNames.applyButton}
+        tools.CreateAndRememberGuiElement("busAssign", newBusFlow, {type = "textfield", name = self.guiElementNames.newBusTextfield})
+        newBusFlow.add{type = "button", caption = { "BusAssignGui.Apply"}, name = self.guiElementNames.applyButton}
 
     end
 
@@ -70,7 +68,7 @@ local function BusAssignGui(modData)
     
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"BusAssignGui.MappingListLabel"}}
-        self.guiElements[self.guiElementNames.busMappingListBox] = flow.add{type = "list-box", name = self.guiElementNames.busMappingListBox}
+        tools.CreateAndRememberGuiElement("busAssign", flow, {type = "list-box", name = self.guiElementNames.busMappingListBox})
 
     end
 
@@ -87,22 +85,24 @@ local function BusAssignGui(modData)
 
     function self.UpdateMappingList()
 
-        local mappingListBox = self.guiElements[self.guiElementNames.busMappingListBox]
+        local mappingListBox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.busMappingListBox)
         mappingListBox.items = self.GetBusMappingsDisplayList()
 
     end
 
 
-    function self.Close()
+    function self.Close(playerId)
 
         local frame = self.guiElements[self.guiElementNames.gui]
         if (not frame) then
           return
         end
 
+        tools.SaveGuiPosition(frame.location, playerId, "config")
+
         localBusMappings = {}
         localSelectedNodes = {}
-        self.guiElements = {}
+        tools.ForgetGuiElements("busAssign")
 
         frame.destroy()
 
@@ -116,8 +116,7 @@ local function BusAssignGui(modData)
         end
         localSelectedNodes = selectedNodes
 
-        local frame = player.gui.screen.add{type = "frame", name = self.guiElementNames.gui, direction = "vertical"}
-        self.guiElements[self.guiElementNames.gui] = frame
+        local frame = tools.CreateAndRememberGuiElement("busAssign", player.gui.screen, {type = "frame", name = self.guiElementNames.gui, direction = "vertical"})
         local verticalFlow = frame.add{type = "flow", direction = "vertical"}
 
         self.AddTitleBar(verticalFlow, frame)
@@ -126,6 +125,8 @@ local function BusAssignGui(modData)
         self.AddAssignButton(verticalFlow)
 
         self.UpdateMappingList()
+
+        frame.location = tools.GetGuiPosition(player.index, "busAssign")
 
         player.opened = frame
 
@@ -173,10 +174,10 @@ local function BusAssignGui(modData)
 
     function self.UpdateEditMapping(oldBusName, newBusInfo)
 
-        local newRadioButton = self.guiElements[self.guiElementNames.newRadioButton]
-        local existingRadioButton = self.guiElements[self.guiElementNames.existingRadioButton]
-        local existingBusDropdown = self.guiElements[self.guiElementNames.existingBusDropdown]
-        local newBusTextfield = self.guiElements[self.guiElementNames.newBusTextfield]
+        local newRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newRadioButton)
+        local existingRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingRadioButton)
+        local existingBusDropdown = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusDropdown)
+        local newBusTextfield = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newBusTextfield)
 
         newRadioButton.state = newBusInfo.type == "new"
         existingRadioButton.state = newBusInfo.type == "existing"
@@ -201,7 +202,7 @@ local function BusAssignGui(modData)
         self.CreateNonExistingBusses()
         self.AssignBusses()
       
-        self.Close()
+        self.Close(event.player_index)
 
         return true
 
@@ -214,7 +215,7 @@ local function BusAssignGui(modData)
             return false
         end
 
-        self.Close()
+        self.Close(event.player_index)
 
         return true
 
@@ -237,7 +238,7 @@ local function BusAssignGui(modData)
 
     function self.GetOldBusNameOfSelectedMapping()
 
-        local mappingListBox = self.guiElements[self.guiElementNames.busMappingListBox]
+        local mappingListBox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.busMappingListBox)
         return tools.KeyFromDisplayString(mappingListBox.items[mappingListBox.selected_index])
 
     end
@@ -246,13 +247,13 @@ local function BusAssignGui(modData)
     function self.HandleRadioButton(event)
 
         if (event.element.name == self.guiElementNames.newRadioButton) then
-            local existingRadioButton = self.guiElements[self.guiElementNames.existingRadioButton]
+            local existingRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingRadioButton)
             existingRadioButton.state = false
             return true
         end
 
         if (event.element.name == self.guiElementNames.existingRadioButton) then
-            local newRadioButton = self.guiElements[self.guiElementNames.newRadioButton]
+            local newRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newRadioButton)
             newRadioButton.state = false
             return true
         end
@@ -267,7 +268,7 @@ local function BusAssignGui(modData)
             return false
         end
 
-        local newRadioButton = self.guiElements[self.guiElementNames.newRadioButton]
+        local newRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newRadioButton)
         local mappingType = "existing"
         if (newRadioButton.state) then
             mappingType = "new"
@@ -275,10 +276,10 @@ local function BusAssignGui(modData)
 
         local newBusName
         if (newRadioButton.state) then
-            local newBusTextfield = self.guiElements[self.guiElementNames.newBusTextfield]
+            local newBusTextfield = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newBusTextfield)
             newBusName = newBusTextfield.text
         else
-            local existingBusDropdown = self.guiElements[self.guiElementNames.existingBusDropdown]
+            local existingBusDropdown = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusDropdown)
             newBusName = tools.KeyFromDisplayString(existingBusDropdown.items[existingBusDropdown.selected_index])
         end
 
