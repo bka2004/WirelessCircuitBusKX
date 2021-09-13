@@ -11,6 +11,7 @@ local function ChannelSetGui(modData)
           channelSetDropDown = modData.constants.modPrefix .. "ChannelSetDropDown",
           channelSetCreateButton = modData.constants.modPrefix .. "ChannelSetCreateButton",
           channelSetRenameButton = modData.constants.modPrefix .. "ChannelSetRenameButton",
+          channelSetDeleteButton = modData.constants.modPrefix .. "ChannelSetDeleteButton",
           channelSetCreateTextfield = modData.constants.modPrefix .. "ChannelSetCreateTextfield",
           newChannelTextfield = modData.constants.modPrefix .. "NewChannelTextfield",
           channelAddButton = modData.constants.modPrefix .. "ChannelAddButton",
@@ -29,10 +30,10 @@ local function ChannelSetGui(modData)
         local flow = parent.add{type = "flow", direction = "horizontal"}
         flow.add{type = "label", caption = {"ConfigGui.Label"}}
         tools.CreateAndRememberGuiElement("channelSet", flow, {type = "drop-down", name = self.guiElementNames.channelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)})
-
-        flow.add{type = "textfield", name = self.guiElementNames.channelSetCreateTextfield}
+        tools.CreateAndRememberGuiElement("channelSet", flow, {type = "textfield", name = self.guiElementNames.channelSetCreateTextfield})
         flow.add{type = "button", name = self.guiElementNames.channelSetCreateButton, caption = {"ConfigGui.Create"}}
         flow.add{type = "button", name = self.guiElementNames.channelSetRenameButton, caption = {"ConfigGui.Rename"}}
+        flow.add{type = "button", name = self.guiElementNames.channelSetDeleteButton, caption = {"ConfigGui.Delete"}}
 
     end
       
@@ -67,13 +68,10 @@ local function ChannelSetGui(modData)
       
         local channelSetDropDown = event.element
         local channelSetName = channelSetDropDown.get_item(channelSetDropDown.selected_index)
-        local channelSetNameTextField = event.element.parent[self.guiElementNames.channelSetCreateTextfield]
-        channelSetNameTextField.text = channelSetName
 
-        local channelsOfSelectedChannelSet = modData.persisted.channelSets[channelSetName].channels
-      
-        local channelList = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelListBox)
-        channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfSelectedChannelSet)
+        self.UpdateChannelSetNameField(channelSetName)
+
+        self.UpdateChannelList(channelSetName)
       
         return true
 
@@ -106,7 +104,7 @@ local function ChannelSetGui(modData)
         return true
       end
       
-            
+ 
       function self.HandleChannelSetCreateButton(event)
         if (event.element.name ~= self.guiElementNames.channelSetCreateButton) then
           return false
@@ -121,13 +119,52 @@ local function ChannelSetGui(modData)
 
         modData.persisted.channelSets[newChannelSetName] = ChannelSet(newChannelSetName)
       
-        textfield.text = ""
-      
-        local dropdown = event.element.parent[self.guiElementNames.channelSetDropDown]
-        dropdown.items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
-        dropdown.selected_index = #dropdown.items
+        self.UpdateChannelSets()
       
         return true
+      end
+
+      
+      function self.HandleChannelSetDeleteButton(event)
+        if (event.element.name ~= self.guiElementNames.channelSetDeleteButton) then
+          return false
+        end
+
+        local dropdown = event.element.parent[self.guiElementNames.channelSetDropDown]
+        local channelSetToDelete = dropdown.items[dropdown.selected_index]
+
+        modData.persisted.channelSets[channelSetToDelete] = nil
+
+        for _, bus in pairs(modData.persisted.busses) do
+          if (bus.channelSet == channelSetToDelete) then
+            bus.channelSet = "<unassigned>"
+          end
+        end
+
+        self.UpdateChannelSets()
+      
+        return true
+      end
+
+      function self.UpdateChannelSets()
+        local channelSetDropdown = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelSetDropDown)
+        channelSetDropdown.items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)
+        channelSetDropdown.selected_index = #channelSetDropdown.items
+        self.UpdateChannelList(channelSetDropdown.items[channelSetDropdown.selected_index])
+        self.UpdateChannelSetNameField(channelSetDropdown.items[channelSetDropdown.selected_index])
+      end
+
+      function self.UpdateChannelList(channelSet)
+        local channelList = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelListBox)
+
+        local channelsOfChannelSet = modData.persisted.channelSets[channelSet].channels
+        channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfChannelSet)
+      end
+
+
+      function self.UpdateChannelSetNameField(channelSet)
+        local channelSetNameTextField = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelSetCreateTextfield)
+        channelSetNameTextField.text = channelSet
       end
 
       
@@ -176,6 +213,7 @@ local function ChannelSetGui(modData)
         return tools.CallEventHandler(event, {
             self.HandleChannelSetCreateButton,
             self.HandleChannelSetRenameButton,
+            self.HandleChannelSetDeleteButton,
             self.HandleChannelAddButton
         })
         
