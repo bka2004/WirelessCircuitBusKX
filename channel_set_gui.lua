@@ -1,5 +1,6 @@
 local ChannelSet = require "channel_set"
 local Tools = require "tools"
+local Factories = require "factories"
 
 
 local function ChannelSetGui(modData)
@@ -24,6 +25,7 @@ local function ChannelSetGui(modData)
 
     local modData = modData
     local tools = Tools(modData)
+    local factories = Factories(modData)
 
     function self.AddChannelSetSelectorToChannelSetGui(parent)
 
@@ -114,14 +116,27 @@ local function ChannelSetGui(modData)
         local newChannelSetName = textfield.text
         local existingChannselSet = modData.persisted.channelSets[newChannelSetName]
         if (existingChannselSet) then
+          game.show_message_dialog{text = "name already in use"}
           return true
         end
 
-        modData.persisted.channelSets[newChannelSetName] = ChannelSet(newChannelSetName)
+        modData.persisted.channelSets[newChannelSetName] = factories.CreateChannelSet(newChannelSetName)
       
         self.UpdateChannelSets()
       
         return true
+      end
+
+
+      function self.ChannelSetIsInUseByBusses(channelSet)
+
+        for _, bus in pairs(modData.persisted.busses) do
+          if (bus.channelSet == channelSet) then
+            return true
+          end
+        end
+
+        return false
       end
 
       
@@ -132,7 +147,12 @@ local function ChannelSetGui(modData)
 
         local dropdown = event.element.parent[self.guiElementNames.channelSetDropDown]
         local channelSetToDelete = dropdown.items[dropdown.selected_index]
-
+        local existingChannelSet = modData.persisted.channelSets[channelSetToDelete]
+        if (self.ChannelSetIsInUseByBusses(existingChannelSet)) then
+          game.show_message_dialog{text = "channel set still in use"}
+          return true
+        end
+        
         modData.persisted.channelSets[channelSetToDelete] = nil
 
         for _, bus in pairs(modData.persisted.busses) do
@@ -155,16 +175,21 @@ local function ChannelSetGui(modData)
       end
 
       function self.UpdateChannelList(channelSet)
+
         local channelList = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelListBox)
 
-        local channelsOfChannelSet = modData.persisted.channelSets[channelSet].channels
-        channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfChannelSet)
+        if (not channelSet) then
+          channelList.items = {}
+        else
+          local channelsOfChannelSet = modData.persisted.channelSets[channelSet].channels
+          channelList.items = tools.ChannelsAsLocalizedStringList(channelsOfChannelSet)
+          end
       end
 
 
-      function self.UpdateChannelSetNameField(channelSet)
+      function self.UpdateChannelSetNameField(channelSetName)
         local channelSetNameTextField = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelSetCreateTextfield)
-        channelSetNameTextField.text = channelSet
+        channelSetNameTextField.text = channelSetName or ""
       end
 
       
@@ -200,6 +225,27 @@ local function ChannelSetGui(modData)
       end
 
       
+      function self.HandleChannelRemoveButton(event)
+        if (event.element.name ~= self.guiElementNames.removeChannelButton) then
+          return false
+        end
+      
+        local channelList = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelListBox)
+        if (channelList.selected_index == 0) then
+          return
+        end
+
+        local channelSetDropDown = tools.RetrieveGuiElement("channelSet", self.guiElementNames.channelSetDropDown)
+        local editedChannelSetName = channelSetDropDown.items[channelSetDropDown.selected_index]
+
+        modData.persisted.channelSets[editedChannelSetName].channels[channelList.selected_index] = nil
+
+        self.UpdateChannelList(editedChannelSetName)
+
+        return true
+      end
+
+      
     function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
@@ -214,6 +260,7 @@ local function ChannelSetGui(modData)
             self.HandleChannelSetCreateButton,
             self.HandleChannelSetRenameButton,
             self.HandleChannelSetDeleteButton,
+            self.HandleChannelRemoveButton,
             self.HandleChannelAddButton
         })
         

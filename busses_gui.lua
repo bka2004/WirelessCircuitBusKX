@@ -1,4 +1,6 @@
 local Tools = require "tools"
+local Factories = require "factories"
+
 
 local function BussesGui(modData)
     local self =
@@ -16,6 +18,7 @@ local function BussesGui(modData)
 
     local modData = modData
     local tools = Tools(modData)
+    local factories = Factories(modData)
 
 
     function self.HandleBusAddButton(event)
@@ -36,7 +39,8 @@ local function BussesGui(modData)
         end
       
         local channelSetName = channelSetDropDown.get_item(selectedIndex)
-        modData.persisted.busses[busName] = { name = busName, channelSet = channelSetName, nodes = {} }
+        local channelSet = modData.persisted.channelSets[channelSetName]
+        modData.persisted.busses[busName] = factories.CreateBusWithChannelSet(busName, channelSet)
         busTextfield.text = ""
       
         self.UpdateBusList()
@@ -51,6 +55,10 @@ local function BussesGui(modData)
         end
       
         local busListBox = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)       
+        if (busListBox.selected_index == 0) then
+          return true
+        end
+
         local busToRemove = tools.KeyFromDisplayString(busListBox.items[busListBox.selected_index])
 
         modData.persisted.busses[busToRemove] = nil

@@ -1,5 +1,7 @@
 local Tools = require "tools"
 local BusNodeClass = require "bus_node"
+local Factories = require "factories"
+local NodeStorage = require "node_storage"
 
 
 local function BusAssignGui(modData)
@@ -24,6 +26,8 @@ local function BusAssignGui(modData)
     local localBusMappings = {}
     local localSelectedNodes
     local tools = Tools(modData)
+    local factories = Factories(modData)
+    local nodeStorage = NodeStorage(modData)
 
 
     function self.GetBusMappingsDisplayList()
@@ -31,7 +35,7 @@ local function BusAssignGui(modData)
         local displayList = {}
 
         for oldBus, newBusInfo in pairs(localBusMappings) do
-            displayList[#displayList+1] = oldBus .. " -> " .. newBusInfo.name .. " [" .. newBusInfo.type .. "]"
+            displayList[#displayList+1] = tools.GetBusNameDisplayString(oldBus) .. " -> " .. tools.GetBusNameDisplayString(newBusInfo.name) .. " [" .. newBusInfo.type .. "]"
         end
 
         return displayList
@@ -93,7 +97,8 @@ local function BusAssignGui(modData)
 
     function self.Close(playerId)
 
-        local frame = self.guiElements[self.guiElementNames.gui]
+        local frame = tools.RetrieveGuiElement("busAssign", self.guiElementNames.gui)
+        --local frame = self.guiElements[self.guiElementNames.gui]
         if (not frame) then
           return
         end
@@ -138,7 +143,7 @@ local function BusAssignGui(modData)
         for oldBus, newBusInfo in pairs(localBusMappings) do
             if (newBusInfo.type == "new") then
                 local channelSet = modData.persisted.busses[oldBus].channelSet
-                modData.persisted.busses[newBusInfo.name] = { name = newBusInfo.name, channelSet = channelSet, nodes = {} }
+                modData.persisted.busses[newBusInfo.name] = factories.CreateBusWithChannelSet(newBusInfo.name, channelSet)
             end
         end
 
@@ -150,15 +155,21 @@ local function BusAssignGui(modData)
         local busNodeClass = BusNodeClass(modData)
 
         for _, entity in pairs(localSelectedNodes) do
-            local busNodeData = modData.persisted.nodes[entity.unit_number]
-            busNodeClass.SetBus(busNodeData, localBusMappings[busNodeData.settings.bus].name)
+            local nodeStorage = modData.persisted.nodesById[entity.unit_number]
+            nodeStorage.settings.busName = localBusMappings[nodeStorage.settings.busName].name
+            nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(nodeStorage)
         end
     end
 
 
     function self.GetBussesWithSameChannelSetAs(busName)
 
-        local channetSetToMatch = modData.persisted.busses[busName].channelSet
+        local origBus = modData.persisted.busses[busName]
+        if (not origBus) then
+            return {}
+        end
+
+        local channetSetToMatch = origBus.channelSet
 
         local result = {}
         for busName, bus in pairs(modData.persisted.busses) do

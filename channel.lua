@@ -99,11 +99,11 @@ local function Channel(modData)
     end
 
 
-    function self.SetOutputOnReceivers(signals, bus, channelName)
+    function self.SetOutputOnReceivers(signals, channel)
 
-        for _, node in pairs(bus.nodes) do
+        for _, node in pairs(channel.nodes) do
             local nodeSettings = node.settings
-            if (nodeSettings.channel == channelName and nodeSettings.direction == modData.constants.nodeDirection.receive) then
+            if (nodeSettings.direction == modData.constants.nodeDirection.receive) then
 
                 -- -- substract the signals seen at the receiver, because they will get added to the output
                 -- local network = node.worldEntity.get_circuit_network(defines.wire_type.red)
@@ -115,22 +115,24 @@ local function Channel(modData)
                 --     self.MergeSignals(signals, network.signals, modData.constants.signalMergeMode.substract)
                 -- end
 
-                node.worldEntity.get_or_create_control_behavior().parameters = { parameters = self.GetConstantCombinatorParametersFromSignals(signals) }
+                if (node.worldEntity.valid) then
+                    node.worldEntity.get_or_create_control_behavior().parameters = self.GetConstantCombinatorParametersFromSignals(signals)
+                end
             end
         end
 
     end
 
 
-    function self.GetSignalsFromWire(wire, bus, channelName)
+    function self.GetSignalsFromWire(wire, channel)
 
         local signals = {}
 
-        for _, node in pairs(bus.nodes) do
+        for _, node in pairs(channel.nodes) do
             local nodeSettings = node.settings
-            if (nodeSettings.channel == channelName and nodeSettings.direction == modData.constants.nodeDirection.send) then
+            if (nodeSettings.direction == modData.constants.nodeDirection.send) then
                 
-                local nodeCircuitNetwork = node.worldEntity.get_circuit_network(wire)
+                local nodeCircuitNetwork = node.worldEntity.valid and node.worldEntity.get_circuit_network(wire) or nil
 
                 if (nodeCircuitNetwork) then
                     self.MergeSignals(signals, nodeCircuitNetwork.signals)
@@ -142,14 +144,14 @@ local function Channel(modData)
     end
 
 
-    function self.Update(bus, channelName)
+    function self.Update(channel)
 
         local signals = {}
 
-        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.red, bus, channelName))
-        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.green, bus, channelName))
+        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.red, channel))
+        self.MergeSignals(signals, self.GetSignalsFromWire(defines.wire_type.green, channel))
 
-        self.SetOutputOnReceivers(signals, bus, channelName)
+        self.SetOutputOnReceivers(signals, channel)
 
     end
 

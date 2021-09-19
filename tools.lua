@@ -8,6 +8,21 @@ local function Tools(modData)
     local modData = modData
     local factories = Factories(modData)
 
+
+    function self.GetOrCreatePlayerSettings(playerId)
+
+        local playerSettings = modData.persisted.playerSettings[playerId]
+        if (playerSettings) then
+            return playerSettings
+        end
+
+        modData.persisted.playerSettings[playerId] = factories.CreatePlayerData(playerId)
+
+        return modData.persisted.playerSettings[playerId]
+
+    end
+
+
     function self.ChannelSetsAsLocalizedStringList(channelSets)
         local localizeStringList = {}
         for name,_ in pairs(channelSets) do
@@ -31,11 +46,11 @@ local function Tools(modData)
     function self.BussesAsLocalizedStringList(busses, channelSets)
         local localizeStringList = {}
         for name, bus in pairs(busses) do
-            local usedChannelSet = channelSets[bus.channelSet]
+            local usedChannelSet = bus.channelSet
             if (not usedChannelSet) then
-                localizeStringList[#localizeStringList + 1] = name .. " - <error: referenced channelset not found:'" .. bus.channelSet .. ">"
+                localizeStringList[#localizeStringList + 1] = self.GetBusNameDisplayString(name) .. " - <error: referenced channelset not found:'" .. bus.channelSet.name .. ">"
             else
-                localizeStringList[#localizeStringList + 1] = name .. " - " .. bus.channelSet
+                localizeStringList[#localizeStringList + 1] = self.GetBusNameDisplayString(name) .. " - " .. bus.channelSet.name
             end
 
         end
@@ -45,10 +60,16 @@ local function Tools(modData)
 
 
     function self.KeyFromDisplayString(displayString)
-        return displayString:sub(1, displayString:find(" ") - 1)
+        return displayString:sub(displayString:find("{") + 1, displayString:find("}") - 1)
+--        return displayString:sub(1, displayString:find(" ") - 1)
     end
 
     
+    function self.GetBusNameDisplayString(busName)
+        return "{" .. busName .. "}"
+    end
+
+
     function self.GetIndexOfDropdownItem(items, item, dropdownItemModifier)
 
         for i, name in pairs(items) do
@@ -129,7 +150,7 @@ local function Tools(modData)
     function self.SaveGuiPosition(position, playerId, guiType)
 
 
-        local playerSettings = modData.tools.getOrCreatePlayerSettings(playerId)
+        local playerSettings = self.GetOrCreatePlayerSettings(playerId)
 
         playerSettings.guiPositions[guiType] = position
 

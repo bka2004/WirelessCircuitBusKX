@@ -6,6 +6,7 @@ local Ghosts = require "ghosts"
 local Bus = require "bus"
 local SelectionTool = require "selection_tool"
 local Factories = require "factories"
+local NodeStorage = require "node_storage"
 
 
 
@@ -18,6 +19,16 @@ string.ends_with = function (self, substring)
   return self:sub(-1 * substring:len()) == substring
 end
 
+local persistedDefault = 
+{
+  channelSets = {},
+  busses = {},
+  nodesById = {},
+  playerSettings = {},
+  guiElements = { config = {}, entity = {}, channelSet = {}, busses = {}, busAssign = {}},
+  editedEntity = nil
+}
+
 local modData =
 {
   constants = 
@@ -26,75 +37,71 @@ local modData =
     nodeDirection = {send = 1, receive = 2},
     guiElementNames = {}
   },
-  persisted = 
-  {
-    channelSets = {},
-    busses = {},
-    nodes = {},
-    playerSettings = {},
-    guiElements = { config = {}, entity = {}, channelSet = {}, busses = {}, busAssign = {}},
-    editedEntity = nil
-  },
+  persisted = persistedDefault,
+  minedEntityCache = {}
 }
+
+
 
 local tools = Tools(modData)
 local factories = Factories(modData)
+local nodeStorage = NodeStorage(modData)
 
-modData.tools =
-{
-  registerNode = function (entityId, entity)
+-- modData.tools =
+-- {
+--   registerNode = function (entityId, entity)
 
-    modData.persisted.nodes[entityId] = factories.CreateBusNodeData(entity)
+--     modData.persisted.nodes[entityId] = factories.CreateBusNodeData(entity)
   
-  end
-}
+--   end
+-- }
   
-modData.tools.registerNodeWithSettings = function(entityId, entity, settings)
+-- modData.tools.registerNodeWithSettings = function(entityId, entity, settings)
 
-  modData.persisted.nodes[entityId] = factories.CreateBusNodeDataWithSettings(entity, settings)
+--   modData.persisted.nodes[entityId] = factories.CreateBusNodeDataWithSettings(entity, settings)
 
-end
+-- end
 
-modData.tools.getBusNode = function(nodeId)
+-- modData.tools.getBusNode = function(nodeId)
 
-  return modData.persisted.nodes[nodeId]
+--   return modData.persisted.nodes[nodeId]
 
-end
+-- end
 
-modData.tools.getOrCreatePlayerSettings = function(playerId)
+-- modData.tools.getOrCreatePlayerSettings = function(playerId)
 
-  local playerSettings = modData.persisted.playerSettings[playerId]
-  if (playerSettings) then
-    return playerSettings
-  end
+--   local playerSettings = modData.persisted.playerSettings[playerId]
+--   if (playerSettings) then
+--     return playerSettings
+--   end
 
-  modData.persisted.playerSettings[playerId] = factories.CreatePlayerData(playerId)
+--   modData.persisted.playerSettings[playerId] = factories.CreatePlayerData(playerId)
 
-  return modData.persisted.playerSettings[playerId]
+--   return modData.persisted.playerSettings[playerId]
 
-end
+-- end
 
-  modData.tools.getNodeSettings = function(nodeId)
-    local node = modData.persisted.nodes[nodeId]
+  -- modData.tools.getNodeSettings = function(nodeId)
+  --   local node = modData.persisted.nodes[nodeId]
 
-    if (not node) then
-      return nil
-    end
+  --   if (not node) then
+  --     return nil
+  --   end
 
-    return tools.deepTableCopy(node.settings)
+  --   return tools.deepTableCopy(node.settings)
 
-  end
+  -- end
 
-  modData.tools.setNodeSettings = function(nodeId, settings)
-    local node = modData.persisted.nodes[nodeId]
+  -- modData.tools.setNodeSettings = function(nodeId, settings)
+  --   local node = modData.persisted.nodes[nodeId]
 
-    if (not node) then
-      return
-    end
+  --   if (not node) then
+  --     return
+  --   end
 
-    modData.persisted.nodes[nodeId].settings = settings
+  --   modData.persisted.nodes[nodeId].settings = settings
 
-  end
+  -- end
 
 
 
@@ -108,10 +115,16 @@ local selectionTool = SelectionTool(modData, gui)
 
 
 
+local function AddPersistentDefaultValues(persisted)
 
+  for key, value in pairs(persistedDefault) do
+    persisted[key] = value
+  end
+end
 
 
 local function OnInit()
+  AddPersistentDefaultValues(modData.persisted)
   global.wireless_circuit_bus_data = modData.persisted
 
   for _, player in pairs(game.players) do
@@ -122,6 +135,11 @@ end
 
 local function OnLoad()
   modData.persisted = global.wireless_circuit_bus_data
+
+--   if (next(modData.persisted) == nil) then
+--     AddPersistentDefaultValues(modData.persisted)
+-- --    modData.persisted = persistedDefault
+--   end
 end
 
 
@@ -134,13 +152,22 @@ end
 
 local function OnTick(event)
 
-  local tick = event.tick;
+  --global.wireless_circuit_bus_data = {}
+  -- if (next(modData.persisted) == nil) then
+  --   AddPersistentDefaultValues(modData.persisted)
+  -- end
+
+  local tick = event.tick
 
   if (tick % 60 == 0) then
     ghosts.CheckPendingGhostsForRevival()
 
-    for busName, _ in pairs(modData.persisted.busses) do
-      bus.Update(busName) -- #todo avoid second lookup
+  if (not modData.persisted.busses) then
+    return
+  end
+
+    for _, curBus in pairs(modData.persisted.busses) do
+      bus.Update(curBus)
     end
   end
 
@@ -159,7 +186,7 @@ local function OnBlueprintSetup(event)
   for _, entity in ipairs(bpe) do
     if (entity.name == "bus-node") then
       local orig = player.surface.find_entity("bus-node", entity.position)
-      local origSettings = modData.tools.getNodeSettings(orig.unit_number)
+      local origSettings = nodeStorage.GetCopyOfSettingsFor(orig.unit_number) -- modData.tools.getNodeSettings(orig.unit_number)
       blueprint.set_blueprint_entity_tag(entity.entity_number, "sourceBusNodeSettings", origSettings)
     end
   end
@@ -170,16 +197,53 @@ end
 local function OnEntityCreatedByPlacing(event)
 
   local createdEntity = event.created_entity
-  
+
   if (createdEntity.name == "entity-ghost" and createdEntity.ghost_name == "bus-node") then
-    ghosts.AddPending(createdEntity)
+
+    -- local player = game.players[event.player_index]
+    -- for key, value in pairs(modData.minedEntityCache) do
+    --   player.print("cache_x:" .. key.x)
+    --   player.print("cache_y:" .. key.y)
+    -- end
+
+    -- player.print("created_x:" .. createdEntity.position.x)
+    -- player.print("created_y:" .. createdEntity.position.y)
+
+    local minedEntity = modData.minedEntityCache[createdEntity.position.x] and modData.minedEntityCache[createdEntity.position.x][createdEntity.position.y]
+    if (minedEntity) then
+      ghosts.AddPendingWithSettings(createdEntity, minedEntity.settings)
+      modData.minedEntityCache[createdEntity.position] = nil
+    else
+      ghosts.AddPending(createdEntity)
+    end
+
   end
 
   if (createdEntity.name ~= "bus-node") then
     return
   end
 
-  modData.tools.registerNode(createdEntity.unit_number, createdEntity)
+  local newNodeId = createdEntity.unit_number
+  nodeStorage.StoreNewNode(factories.CreateNode(newNodeId, createdEntity), newNodeId)
+  --modData.tools.registerNode(createdEntity.unit_number, createdEntity)
+
+end
+
+
+local function OnEntityRemoved(event)
+
+  local removedEntity = event.entity
+  
+  if (removedEntity.name == "bus-node") then
+    if (not modData.minedEntityCache[removedEntity.position.x]) then
+      modData.minedEntityCache[removedEntity.position.x] = {}
+    end
+    modData.minedEntityCache[removedEntity.position.x][removedEntity.position.y] = modData.persisted.nodesById[removedEntity.unit_number]
+
+    nodeStorage.RemoveNode(removedEntity.unit_number)
+
+    --modData.persisted.nodes[removedEntity.unit_number] = nil
+  end
 
 end
 
@@ -193,7 +257,9 @@ local function OnSettingsPasted(event)
   local sourceId = event.source.unit_number
   local destId = event.destination.unit_number
 
-  modData.tools.setNodeSettings(destId, modData.tools.getNodeSettings(sourceId))
+  local destinationNode = nodeStorage.GetNode(destId)
+  destinationNode.settings = nodeStorage.GetCopyOfSettingsFor(sourceId)
+  --modData.tools.setNodeSettings(destId, modData.tools.getNodeSettings(sourceId))
 
 end
 
@@ -210,6 +276,8 @@ script.on_event(defines.events.on_gui_opened, gui.HandleOnGuiOpened)
 script.on_event(defines.events.on_gui_click, gui.HandleOnGuiClick)
 script.on_event(defines.events.on_gui_selection_state_changed, gui.HandleOnGuiSelectionStateChanged)
 script.on_event(defines.events.on_entity_cloned, OnEntityCreatedByPlacing)
+script.on_event(defines.events.on_player_mined_entity, OnEntityRemoved)
+script.on_event(defines.events.on_robot_mined_entity, OnEntityRemoved)
 script.on_event(defines.events.on_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_robot_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_entity_settings_pasted, OnSettingsPasted)

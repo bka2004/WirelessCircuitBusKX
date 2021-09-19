@@ -1,5 +1,6 @@
 local Tools = require "tools"
-local BusNodeClass = require "bus_node"
+--local BusNodeClass = require "bus_node"
+local NodeStorage = require "node_storage"
 
 
 local function EntityGui(modData)
@@ -19,6 +20,7 @@ local function EntityGui(modData)
 
     local modData = modData
     local tools = Tools(modData)
+    local nodeStorage = NodeStorage(modData)
 
 
     function self.AddTitleBarToEntityGui(parent, dragTarget)
@@ -64,15 +66,18 @@ local function EntityGui(modData)
       function self.GetNodeForEditedEntity()
 
         local uniqueEntityId = modData.persisted.editedEntity.unit_number
-        return modData.tools.getBusNode(uniqueEntityId)
-
+        return nodeStorage.GetNode(uniqueEntityId)
       end
 
 
       function self.GetBusOfEditedEntity()
 
-        return self.GetNodeForEditedEntity().settings.bus
+        local node = self.GetNodeForEditedEntity()
+        if (node and node.settings) then
+          return node.settings.busName
+        end
 
+        return ""
       end
 
 
@@ -83,7 +88,7 @@ local function EntityGui(modData)
             return nil
         end
 
-        return modData.persisted.channelSets[bus.channelSet]
+        return bus.channelSet
 
       end
 
@@ -108,7 +113,7 @@ local function EntityGui(modData)
       directionDropdown.items = { "Send", "Receive"}
       
       local busNodeSettings = self.GetNodeForEditedEntity().settings
-      if (busNodeSettings.direction == modData.constants.nodeDirection.send) then
+      if (busNodeSettings and busNodeSettings.direction == modData.constants.nodeDirection.send) then
         directionDropdown.selected_index = 1
       else
         directionDropdown.selected_index = 2
@@ -124,10 +129,13 @@ local function EntityGui(modData)
 
           local channelSet = nil
           if (busDropDown.selected_index == 0) then
-            local busOfEntity = self.GetBusOfEditedEntity()
-            if (busOfEntity:len() > 0) then
-              channelSet = modData.persisted.channelSets[modData.persisted.busses[busOfEntity].channelSet]
-            end
+            -- local busOfEntity = self.GetBusOfEditedEntity()
+            -- if (busOfEntity:len() > 0) then
+            --   local bus = modData.persisted.busses[busOfEntity]
+            --   if (bus) then
+            --     channelSet = modData.persisted.channelSets[bus.channelSet]
+            --   end
+            -- end
           else
             channelSet = self.GetChannelSetByBusName(tools.KeyFromDisplayString(busDropDown.items[busDropDown.selected_index]))
           end
@@ -136,7 +144,8 @@ local function EntityGui(modData)
             channelDropDown.items = {}
           else
             channelDropDown.items = tools.ChannelsAsLocalizedStringList(channelSet.channels)
-            channelDropDown.selected_index = tools.GetIndexOfDropdownItem(channelDropDown.items, self.GetNodeForEditedEntity().settings.channel)
+            local nodeSettings = self.GetNodeForEditedEntity().settings
+            channelDropDown.selected_index = nodeSettings and tools.GetIndexOfDropdownItem(channelDropDown.items, nodeSettings.channelName) or 0
           end
       end
 
@@ -180,7 +189,7 @@ local function EntityGui(modData)
       end
       
 
-      function ApplySelectedBus(busNodeData)
+      function ApplySelectedBus(node)
 
         local busDropdown = tools.RetrieveGuiElement("entity", self.guiElementNames.busOfEntityDropdown)
         local selectedBusIndex = busDropdown.selected_index
@@ -190,8 +199,7 @@ local function EntityGui(modData)
           selectedBus = tools.KeyFromDisplayString(busDropdown.items[selectedBusIndex])
         end
 
-        local busNode = BusNodeClass(modData)
-        busNode.SetBus(busNodeData, selectedBus)
+        node.settings.busName = selectedBus
 
       end
 
@@ -201,7 +209,7 @@ local function EntityGui(modData)
         local channelDropDown = tools.RetrieveGuiElement("entity", self.guiElementNames.channelOfEntityDropdown)
 
         if (channelDropDown.selected_index ~= 0) then
-          busNode.settings.channel = channelDropDown.items[channelDropDown.selected_index]
+          busNode.settings.channelName = channelDropDown.items[channelDropDown.selected_index]
         end
 
       end
@@ -231,6 +239,8 @@ local function EntityGui(modData)
         ApplySelectedBus(busNode)
         ApplySelectedChannel(busNode)
         ApplySendReceiveStats(busNode)
+
+        nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(busNode)
       
         self.Close(event.player_index)
 

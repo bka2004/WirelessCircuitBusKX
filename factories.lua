@@ -1,24 +1,35 @@
 local function Factories(modData)
     local self = {}
 
-    function self.CreateBusNodeData(entity)
+    function self.CreateNode(newNodeId, entity)
 
-        return 
+        return
         {
+            id = newNodeId,
             worldEntity = entity,
-            settings = { bus = "", channel = "", direction = modData.constants.nodeDirection.receive }
+            settings = { busName = "", channelName = "", direction = modData.constants.nodeDirection.receive },
+            currentlyAssignedChannelRef = nil
         }
-
     end
 
-    function self.CreateBusNodeDataWithSettings(entity, settings)
+    -- function self.CreateBusNodeData(entity)
 
-        local newBusData = self.CreateBusNodeData(entity)
-        newBusData.settings = settings
+    --     return 
+    --     {
+    --         worldEntity = entity,
+    --         settings = { bus = "", channel = "", direction = modData.constants.nodeDirection.receive }
+    --     }
 
-        return newBusData
+    -- end
 
-    end
+    -- function self.CreateBusNodeDataWithSettings(entity, settings)
+
+    --     local newBusData = self.CreateBusNodeData(entity)
+    --     newBusData.settings = settings
+
+    --     return newBusData
+
+    -- end
 
 
     function self.CreatePlayerData(playerId)
@@ -28,6 +39,41 @@ local function Factories(modData)
             guiPositions = { }
         }
 
+    end
+
+
+    function self.CreateBus(busName)
+        return
+        {
+            name = busName,
+            channelSet = {},
+            channels = {}
+        }
+    end
+
+
+    function self.CreateBusWithChannelSet(busName, channelSet)
+        local newBus = self.CreateBus(busName)
+        newBus.channelSet = channelSet
+        return newBus
+    end
+
+
+    function self.CreateChannel(channelName)
+        return
+        {
+            name = channelName,
+            nodes = {}
+        }
+    end
+
+
+    function self.CreateChannelSet(channelSetName)
+        return
+        {
+            name = channelSetName,
+            channels = {}
+        }
     end
 
     return self

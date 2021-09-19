@@ -14,20 +14,23 @@ local function BusNodeClass(modData)
     -- end
 
 
-    function self.SetBus(busNodeData, busName)
+    -- function self.SetBus(node, busName)
 
-        local busNodeSettings = busNodeData.settings
-        if (busName == "") then
-          if (busNodeSettings.bus:len() > 0) then
-            modData.persisted.busses[busNodeSettings.bus].nodes[busNodeData.worldEntity.unit_number] = nil
-            busNodeData.bus = ""
-          end
-        else
-          busNodeSettings.bus = busName
-          modData.persisted.busses[busName].nodes[busNodeData.worldEntity.unit_number] = busNodeData
-        end
+    --     if (not node.settings) then
+    --       node.settings = {}
+    --     end
+    --     local settings = node.settings
+    --     if (busName == "") then
+    --       if (settings.bus:len() > 0) then
+    --         modData.persisted.busses[settings.bus].nodes[node.worldEntity.unit_number] = nil
+    --         node.bus = ""
+    --       end
+    --     else
+    --       settings.bus = busName
+    --       modData.persisted.busses[busName].nodes[node.worldEntity.unit_number] = node
+    --     end
 
-    end
+    -- end
 
     -- function self.GetDelimitedCount(count)
     --     return math.min(2147483647, math.max(-2147483647, count))
