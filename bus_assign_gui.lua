@@ -155,9 +155,9 @@ local function BusAssignGui(modData)
         local busNodeClass = BusNodeClass(modData)
 
         for _, entity in pairs(localSelectedNodes) do
-            local nodeStorage = modData.persisted.nodesById[entity.unit_number]
-            nodeStorage.settings.busName = localBusMappings[nodeStorage.settings.busName].name
-            nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(nodeStorage)
+            local node = modData.persisted.nodesById[entity.unit_number]
+            node.settings.busName = localBusMappings[node.settings.busName].name
+            nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(node)
         end
     end
 

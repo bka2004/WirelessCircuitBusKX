@@ -161,12 +161,18 @@ local function OnTick(event)
 
   if (tick % 60 == 0) then
     ghosts.CheckPendingGhostsForRevival()
+  end
 
-  if (not modData.persisted.busses) then
+  local l_busses = modData.persisted.busses
+
+  if (not l_busses) then
     return
   end
 
-    for _, curBus in pairs(modData.persisted.busses) do
+  local busCount = 0
+  for _, curBus in pairs(l_busses) do
+    busCount = busCount + 1
+    if (busCount % 60 == tick % 60) then
       bus.Update(curBus)
     end
   end

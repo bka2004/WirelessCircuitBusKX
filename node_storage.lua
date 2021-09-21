@@ -46,7 +46,7 @@ local function NodeStorage(modData)
 
 
     function self.StoreNewNode(node, id)
-        self.StoreNewNodeWithSettings(node, id, {busName = "", channelName = ""})
+        self.StoreNewNodeWithSettings(node, id, {busName = "", channelName = "", direction = modData.constants.nodeDirection.send })
     end
 
 
@@ -56,7 +56,11 @@ local function NodeStorage(modData)
         local targetChannel = self.GetAssignedChannel(settings.busName, settings.channelName)
 
         if (targetChannel) then
-            targetChannel.nodes[id] = node
+            if (settings.direction == modData.constants.nodeDirection.send) then
+                targetChannel.senderNodes[id] = node
+            else                
+                targetChannel.receiverNodes[id] = node
+            end
         end
         node.settings = settings
         node.currentlyAssignedChannelRef = targetChannel
@@ -77,7 +81,7 @@ local function NodeStorage(modData)
 
         local assignedChannel = assignedBus.channels[channelName]
         if (not assignedChannel) then
-            assignedBus.channels[channelName] = { nodes = {}}
+            assignedBus.channels[channelName] = { receiverNodes = {}, senderNodes = {}}
             assignedChannel = assignedBus.channels[channelName]
         end
 
@@ -94,7 +98,11 @@ local function NodeStorage(modData)
         local assignedChannel = self.GetAssignedChannel(nodeToRemove.settings.busName, nodeToRemove.settings.channelName)
 
         if (assignedChannel) then
-            assignedChannel.nodes[nodeId] = nil
+            if (nodeToRemove.settings.direction == modData.constants.nodeDirection.send) then
+                assignedChannel.senderNodes[nodeId] = nil
+            else                
+                assignedChannel.receiverNodes[nodeId] = nil
+            end
         end
         modData.persisted.nodesById[nodeId] = nil
 
@@ -111,10 +119,18 @@ local function NodeStorage(modData)
         end
 
         if (node.currentlyAssignedChannelRef) then
-            node.currentlyAssignedChannelRef.nodes[node.id] = nil
+            if (settings.direction == modData.constants.nodeDirection.send) then
+                node.currentlyAssignedChannelRef.senderNodes[node.id] = nil
+            else
+                node.currentlyAssignedChannelRef.receiverNodes[node.id] = nil
+            end
         end
         if (targetChannel) then
-            targetChannel.nodes[node.id] = node
+            if (settings.direction == modData.constants.nodeDirection.send) then
+                targetChannel.senderNodes[node.id] = node
+            else                    
+                targetChannel.receiverNodes[node.id] = node
+            end
         end
         node.currentlyAssignedChannelRef = targetChannel
 

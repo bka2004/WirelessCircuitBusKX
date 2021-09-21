@@ -13,7 +13,7 @@ local function SelectionTool(modData, gui)
         local busses = {}
 
         for _, entity in pairs(event.entities) do
-            busses[modData.persisted.nodes[entity.unit_number].settings.bus] = true
+            busses[modData.persisted.nodesById[entity.unit_number].settings.busName] = true
         end
 
         return busses

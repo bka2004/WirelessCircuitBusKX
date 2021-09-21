@@ -21,12 +21,12 @@ local function Bus(modData)
 
 
         --local channelSet = modData.persisted.channelSets[bus.channelSet]
-        if (not bus.channelSet) then
-            return
-        end
+        -- if (not bus.channelSet) then
+        --     return
+        -- end
 
         for _, curChannel in pairs(bus.channels) do
-            channel.Update(curChannel)
+             channel.Update(curChannel)
         end
     end
 
