@@ -112,6 +112,7 @@ local gui = Gui(modData)
 local ghosts = Ghosts(modData)
 local bus = Bus(modData)
 local selectionTool = SelectionTool(modData, gui)
+local dataMigrated = false
 
 
 
@@ -136,6 +137,10 @@ end
 local function OnLoad()
   modData.persisted = global.wireless_circuit_bus_data
 
+  -- TEMP
+
+  -- END_TEMP
+
 --   if (next(modData.persisted) == nil) then
 --     AddPersistentDefaultValues(modData.persisted)
 -- --    modData.persisted = persistedDefault
@@ -152,6 +157,33 @@ end
 
 local function OnTick(event)
 
+  -- TEMP
+  if (not dataMigrated) then
+    for _, bus in pairs(modData.persisted.busses) do
+      for _, channel in pairs(bus.channels) do
+        if (channel.nodes) then
+          for _, node in pairs(channel.nodes) do
+            if (node.settings.direction == modData.constants.nodeDirection.send) then
+              channel.senderNodes = channel.senderNodes or {}
+              channel.senderNodes[node.id] = node
+            else
+              channel.receiverNodes = channel.receiverNodes or {}
+              channel.receiverNodes[node.id] = node
+            end
+          end
+  
+          channel.nodes = {}
+        end
+      end
+    end
+  
+
+    dataMigrated = true
+  end
+  -- END_TEMP
+
+
+  
   --global.wireless_circuit_bus_data = {}
   -- if (next(modData.persisted) == nil) then
   --   AddPersistentDefaultValues(modData.persisted)

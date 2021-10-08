@@ -164,6 +164,11 @@ local function Channel(modData)
 
     function self.SetOutputOnReceivers(signals, channel)
 
+        -- TEMP
+        if (not channel.receiverNodes) then
+            return
+        end
+        -- END_TEMP
         for _, node in pairs(channel.receiverNodes) do
             --local nodeSettings = node.settings
 
@@ -228,6 +233,12 @@ local function Channel(modData)
     function self.MergeSignalsOfWire(signals, wire, channel)
 
         --local signals = {}
+
+        -- TEMP
+        if (not channel.senderNodes) then
+            return
+        end
+        -- END_TEMP
 
         for _, node in pairs(channel.senderNodes) do
 --            local nodeSettings = node.settings

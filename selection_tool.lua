@@ -24,24 +24,28 @@ local function SelectionTool(modData, gui)
     function self.GetPrefixAndNumericIndex(busName)
         local prefix, index = string.match(busName, "^(.-)([0-9]*)$")
 
+        if not index or index == "" then
+            return prefix, 0
+        end
+
         return prefix, tonumber(index)
     end
 
 
-    function self.GetHighestNumericIndexForPrefix(busNamePrefix)
+    -- function self.GetHighestNumericIndexForPrefix(busNamePrefix)
 
-        local highestIndex = 0
+    --     local highestIndex = 0
 
-        for busName, _ in pairs(modData.persisted.busses) do
-            local curPrefix, curIndex = self.GetPrefixAndNumericIndex(busName)
-            if (curPrefix == busNamePrefix and curIndex > highestIndex) then
-                highestIndex = curIndex
-            end
-        end
+    --     for busName, _ in pairs(modData.persisted.busses) do
+    --         local curPrefix, curIndex = self.GetPrefixAndNumericIndex(busName)
+    --         if (curPrefix == busNamePrefix and curIndex > highestIndex) then
+    --             highestIndex = curIndex
+    --         end
+    --     end
 
-        return highestIndex
+    --     return highestIndex
 
-    end
+    -- end
 
 
     function self.CalculateDefaultMappings(busses)
@@ -49,11 +53,22 @@ local function SelectionTool(modData, gui)
         local highestSeenIndexByPrefix = {}
 
         for bus, _ in pairs(busses) do
-            local prefix, _ = self.GetPrefixAndNumericIndex(bus)
+            local prefix, index = self.GetPrefixAndNumericIndex(bus)
             if (highestSeenIndexByPrefix[prefix] == nil) then
-                highestSeenIndexByPrefix[prefix] = self.GetHighestNumericIndexForPrefix(prefix)
+                highestSeenIndexByPrefix[prefix] = index
+            else 
+                if (highestSeenIndexByPrefix[prefix] < index) then
+                    highestSeenIndexByPrefix[prefix] = index
+                end
             end
         end
+
+        -- for bus, _ in pairs(busses) do
+        --     local prefix, _ = self.GetPrefixAndNumericIndex(bus)
+        --     if (highestSeenIndexByPrefix[prefix] == nil) then
+        --         highestSeenIndexByPrefix[prefix] = self.GetHighestNumericIndexForPrefix(prefix)
+        --     end
+        -- end
 
         local resultingMappings = {}
 
