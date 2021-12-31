@@ -13,7 +13,12 @@ local function SelectionTool(modData, gui)
         local busses = {}
 
         for _, entity in pairs(event.entities) do
-            busses[modData.persisted.nodesById[entity.unit_number].settings.busName] = true
+            if (entity.type ~= "entity-ghost") then
+                busses[modData.persisted.nodesById[entity.unit_number].settings.busName] = true
+            else
+                local ghostSettings = entity.tags and entity.tags.sourceBusNodeSettings or nil
+                busses[ghostSettings.busName] = true
+            end
         end
 
         return busses

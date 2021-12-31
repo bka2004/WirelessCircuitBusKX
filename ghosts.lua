@@ -1,35 +1,74 @@
 local Factories = require "factories"
 local NodeStorage = require "node_storage"
+local Tools = require "tools"
 
 
 local function Ghosts(modData)
 
     local self =
     {
-        pending = {}
     }
 
     local modData = modData
     local factories = Factories(modData)
     local nodeStorage = NodeStorage(modData)
+    local tools = Tools(modData)
+
 
     function self.AddPending(ghost)
-        local position = ghost.position
         local settings = ghost.tags and ghost.tags.sourceBusNodeSettings or nil
-        self.pending[#self.pending+1] =  { position = position, settings = settings }
+        self.AddPendingWithSettings(ghost, settings)
     end
 
     function self.AddPendingWithSettings(ghost, settings)
 
+        if (not self.GetPendingGhostsArray()) then
+            self.InitPendingGhostsArray()
+        end
+
         local position = ghost.position
-        self.pending[#self.pending+1] =  { position = position, settings = settings }
+        self.AppendToPendingGhostsArray({ position = position, settings = settings })
 
     end
 
 
+    function self.GetPendingGhostsArray()
+        return modData.persisted.pendingGhosts
+    end
+
+
+    function self.AppendToPendingGhostsArray(pendingGhost)
+        modData.persisted.pendingGhosts[#modData.persisted.pendingGhosts + 1] = pendingGhost
+    end
+
+
+    function self.RemovePendingGhostAtPosition(position)
+        modData.persisted.pendingGhosts[position] = nil
+    end
+
+
+    function self.InitPendingGhostsArray()
+        modData.persisted.pendingGhosts = {}
+    end
+
+
+    function self.UpdateBusOfPendingGhost(ghostPosition, busName)
+        for _, currentPendingGhost in ipairs(modData.persisted.pendingGhosts) do
+            if (tools.PositionsAreEqual(currentPendingGhost.position, ghostPosition)) then
+                currentPendingGhost.settings.busName = busName
+                return
+            end
+        end
+    end
+    
+
     function self.CheckPendingGhostsForRevival()
 
-        for i, ghost_data in pairs(self.pending) do
+        if (not self.GetPendingGhostsArray()) then
+            return
+        end
+
+        for i, ghost_data in pairs(self.GetPendingGhostsArray()) do
 
             local entityAtPosition = game.surfaces["nauvis"].find_entity("bus-node", ghost_data.position)
             if (entityAtPosition) then
@@ -37,7 +76,7 @@ local function Ghosts(modData)
                 local newNodeId = entityAtPosition.unit_number
                 nodeStorage.StoreNewNodeWithSettings(factories.CreateNode(newNodeId, entityAtPosition), newNodeId, ghost_data.settings)
 
-                self.pending[i] = nil
+                self.RemovePendingGhostAtPosition(i)
 
             end
 

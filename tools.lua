@@ -59,6 +59,14 @@ local function Tools(modData)
     end
 
 
+    function self.BussesAsLocalizedStringListSorted(busses, channelSets)
+        local localizeStringList = self.BussesAsLocalizedStringList(busses, channelSets)
+        table.sort(localizeStringList)
+      
+        return localizeStringList
+    end
+
+
     function self.KeyFromDisplayString(displayString)
         return displayString:sub(displayString:find("{") + 1, displayString:find("}") - 1)
 --        return displayString:sub(1, displayString:find(" ") - 1)
@@ -177,6 +185,15 @@ local function Tools(modData)
     function self.ForgetGuiElements(guiType)
 
         modData.persisted.guiElements[guiType] = {}
+        
+    end
+
+
+    function self.PositionsAreEqual(position1, position2)
+
+        return
+          position1.x == position2.x
+          and position1.y == position2.y
         
     end
 

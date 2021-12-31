@@ -4,7 +4,7 @@ local Factories = require "factories"
 local NodeStorage = require "node_storage"
 
 
-local function BusAssignGui(modData)
+local function BusAssignGui(modData, ghosts)
 
     local self = 
     {
@@ -17,18 +17,35 @@ local function BusAssignGui(modData)
             newRadioButton = modData.constants.modPrefix .. "NewRadioButton",
             existingRadioButton = modData.constants.modPrefix .. "ExistingRadioButton",
             existingBusDropdown = modData.constants.modPrefix .. "ExistingBusDropdown",
-            newBusTextfield = modData.constants.modPrefix .. "NewBusTextfield",
-            applyButton = modData.constants.modPrefix .. "ApplyButton",
+            newBusTextfield = modData.constants.modPrefix .. "NewBusForMappingTextfield",
+            existingBusStrictChannelSet = modData.constants.modPrefix .. "StrictChannelSetCheckBox",
+            newBusFlow =  modData.constants.modPrefix .. "NewBusFlow",
+            existingBusFlow =  modData.constants.modPrefix .. "ExistingBusFlow",
         },
     }
 
     local modData = modData
+    local ghosts = ghosts
     local localBusMappings = {}
     local localSelectedNodes
     local tools = Tools(modData)
     local factories = Factories(modData)
     local nodeStorage = NodeStorage(modData)
 
+    function self.EnableMappingEditGuiElements(newState)
+        tools.RetrieveGuiElement("busAssign", self.guiElementNames.newBusFlow).visible = newState
+        tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusFlow).visible = newState
+    end
+
+    function self.DisableMappingEditGui()
+        self.EnableMappingEditGuiElements(false)
+        
+    end
+
+    function self.EnableMappingEditGui()
+        self.EnableMappingEditGuiElements(true)
+        
+    end
 
     function self.GetBusMappingsDisplayList()
 
@@ -54,17 +71,19 @@ local function BusAssignGui(modData)
 
         parent.add{type = "label", caption = {"BusAssignGui.MappingEditLabel"}}
 
-        local existingBusFlow = parent.add{type = "flow", direction = "horizontal"}
+        local existingBusFlow = tools.CreateAndRememberGuiElement("busAssign", parent, {type = "flow", direction = "horizontal", name = self.guiElementNames.existingBusFlow })
         tools.CreateAndRememberGuiElement("busAssign", existingBusFlow, {type = "radiobutton", state = false, name = self.guiElementNames.existingRadioButton })
         existingBusFlow.add{type = "label", caption = {"BusAssignGui.ExistingBusLabel"}}
         tools.CreateAndRememberGuiElement("busAssign", existingBusFlow, {type = "drop-down", name = self.guiElementNames.existingBusDropdown})
+        tools.CreateAndRememberGuiElement("busAssign", existingBusFlow, {type = "checkbox", name = self.guiElementNames.existingBusStrictChannelSet, state = false})
+        existingBusFlow.add{type = "label", caption = {"BusAssignGui.StrictChannelSetLabel"}}
 
-        local newBusFlow = parent.add{type = "flow", direction = "horizontal"}
+        local newBusFlow = tools.CreateAndRememberGuiElement("busAssign", parent, {type = "flow", direction = "horizontal", name = self.guiElementNames.newBusFlow })
         tools.CreateAndRememberGuiElement("busAssign", newBusFlow, {type = "radiobutton", state = false, name = self.guiElementNames.newRadioButton })
         newBusFlow.add{type = "label", caption = {"BusAssignGui.NewBusLabel"}}
         tools.CreateAndRememberGuiElement("busAssign", newBusFlow, {type = "textfield", name = self.guiElementNames.newBusTextfield})
-        newBusFlow.add{type = "button", caption = { "BusAssignGui.Apply"}, name = self.guiElementNames.applyButton}
 
+        self.DisableMappingEditGui()
     end
 
 
@@ -155,9 +174,15 @@ local function BusAssignGui(modData)
         local busNodeClass = BusNodeClass(modData)
 
         for _, entity in pairs(localSelectedNodes) do
-            local node = modData.persisted.nodesById[entity.unit_number]
-            node.settings.busName = localBusMappings[node.settings.busName].name
-            nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(node)
+            if (entity.type ~= "entity-ghost") then
+                local node = modData.persisted.nodesById[entity.unit_number]
+                node.settings.busName = localBusMappings[node.settings.busName].name
+                nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(node)
+            else
+                local ghostSettings = entity.tags and entity.tags.sourceBusNodeSettings or nil
+
+                ghosts.UpdateBusOfPendingGhost(entity.position, localBusMappings[ghostSettings.busName].name)
+            end
         end
     end
 
@@ -192,7 +217,7 @@ local function BusAssignGui(modData)
 
         newRadioButton.state = newBusInfo.type == "new"
         existingRadioButton.state = newBusInfo.type == "existing"
-        existingBusDropdown.items = tools.BussesAsLocalizedStringList(self.GetBussesWithSameChannelSetAs(oldBusName), modData.persisted.channelSets)
+        self.UpdateExistingBusses()
 
         if (newRadioButton.state) then
             existingBusDropdown.selected_index = 0
@@ -201,6 +226,20 @@ local function BusAssignGui(modData)
             existingBusDropdown.selected_index = tools.GetIndexOfDropdownItem(existingBusDropdown.items, newBusInfo.name, tools.KeyFromDisplayString)
             newBusTextfield.text = ""
         end
+    end
+
+
+    function self.UpdateExistingBusses()
+
+        local existingBusDropdown = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusDropdown)
+        local strictChannelSetCheckbox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusStrictChannelSet)
+
+        if (strictChannelSetCheckbox.state) then
+            existingBusDropdown.items = tools.BussesAsLocalizedStringList(self.GetBussesWithSameChannelSetAs(oldBusName), modData.persisted.channelSets)
+        else
+            existingBusDropdown.items = tools.BussesAsLocalizedStringList(modData.persisted.busses)
+        end
+
     end
 
 
@@ -243,6 +282,8 @@ local function BusAssignGui(modData)
         local newBusInfo = localBusMappings[oldBusOfMapping]
         self.UpdateEditMapping(oldBusOfMapping, newBusInfo)
 
+        self.EnableMappingEditGui()
+
         return true
     end
 
@@ -250,6 +291,10 @@ local function BusAssignGui(modData)
     function self.GetOldBusNameOfSelectedMapping()
 
         local mappingListBox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.busMappingListBox)
+        if (mappingListBox.selected_index == 0) then
+            return nil;
+        end
+
         return tools.KeyFromDisplayString(mappingListBox.items[mappingListBox.selected_index])
 
     end
@@ -260,12 +305,14 @@ local function BusAssignGui(modData)
         if (event.element.name == self.guiElementNames.newRadioButton) then
             local existingRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingRadioButton)
             existingRadioButton.state = false
+            self.UpdateSelectedMapping()
             return true
         end
 
         if (event.element.name == self.guiElementNames.existingRadioButton) then
             local newRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newRadioButton)
             newRadioButton.state = false
+            self.UpdateSelectedMapping()
             return true
         end
 
@@ -273,10 +320,11 @@ local function BusAssignGui(modData)
     end
 
 
-    function self.HandleApplyButton(event)
+    function self.UpdateSelectedMapping()
 
-        if (event.element.name ~= self.guiElementNames.applyButton) then
-            return false
+        local mappingListBox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.busMappingListBox)
+        if (mappingListBox.selected_index == 0) then
+            return;
         end
 
         local newRadioButton = tools.RetrieveGuiElement("busAssign", self.guiElementNames.newRadioButton)
@@ -291,15 +339,65 @@ local function BusAssignGui(modData)
             newBusName = newBusTextfield.text
         else
             local existingBusDropdown = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusDropdown)
+            if (existingBusDropdown.selected_index == 0) then
+                return
+            end
+
             newBusName = tools.KeyFromDisplayString(existingBusDropdown.items[existingBusDropdown.selected_index])
         end
 
         local oldBusName = self.GetOldBusNameOfSelectedMapping()
+        if not oldBusName then
+            return true
+        end
         local newBusInfo = { type = mappingType, name = newBusName }
 
         localBusMappings[oldBusName] = newBusInfo
 
         self.UpdateMappingList()
+
+        return true
+
+    end
+
+
+    function self.HandleStrictChannelSetCheckBox(event)
+
+        if (event.element.name ~= self.guiElementNames.existingBusStrictChannelSet) then
+            return false
+        end
+
+        local strictChannelSetCheckbox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusStrictChannelSet)
+
+        self.UpdateExistingBusses()
+
+        return true
+
+    end
+
+
+    function self.HandleExistingBussesSelectionChanged(event)
+
+        if (event.element.name ~= self.guiElementNames.existingBusDropdown) then
+            return false
+        end
+
+        self.UpdateSelectedMapping()
+
+        return true
+
+    end
+
+
+    function self.HandleNewBusNameTextChanged(event)
+
+        if (event.element.name ~= self.guiElementNames.newBusTextfield) then
+            return false
+        end
+
+        self.UpdateSelectedMapping()
+
+        return true
 
     end
 
@@ -307,11 +405,10 @@ local function BusAssignGui(modData)
     function self.HandleOnGuiClick(event)
 
         return tools.CallEventHandler(event, {
-            self.HandleEditMappingApplyButton,
             self.HandleCloseButton,
             self.HandleAssignBusButton,
             self.HandleRadioButton,
-            self.HandleApplyButton,
+            self.HandleStrictChannelSetCheckBox,
         })
 
     end
@@ -321,6 +418,16 @@ local function BusAssignGui(modData)
 
         tools.CallEventHandler(event, {
             self.HandleBusMappingSelectionChanged,
+            self.HandleExistingBussesSelectionChanged,
+        })
+
+    end
+
+
+    function self.HandleOnGuiTextChanged(event)
+
+        tools.CallEventHandler(event, {
+            self.HandleNewBusNameTextChanged,
         })
 
     end

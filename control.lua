@@ -26,7 +26,8 @@ local persistedDefault =
   nodesById = {},
   playerSettings = {},
   guiElements = { config = {}, entity = {}, channelSet = {}, busses = {}, busAssign = {}},
-  editedEntity = nil
+  editedEntity = nil,
+  pendingGhosts = {}
 }
 
 local modData =
@@ -108,8 +109,8 @@ local nodeStorage = NodeStorage(modData)
 
 
 
-local gui = Gui(modData)
 local ghosts = Ghosts(modData)
+local gui = Gui(modData, ghosts)
 local bus = Bus(modData)
 local selectionTool = SelectionTool(modData, gui)
 local dataMigrated = false
@@ -136,15 +137,6 @@ end
 
 local function OnLoad()
   modData.persisted = global.wireless_circuit_bus_data
-
-  -- TEMP
-
-  -- END_TEMP
-
---   if (next(modData.persisted) == nil) then
---     AddPersistentDefaultValues(modData.persisted)
--- --    modData.persisted = persistedDefault
---   end
 end
 
 
@@ -158,36 +150,37 @@ end
 local function OnTick(event)
 
   -- TEMP
-  if (not dataMigrated) then
-    for _, bus in pairs(modData.persisted.busses) do
-      for _, channel in pairs(bus.channels) do
-        if (channel.nodes) then
-          for _, node in pairs(channel.nodes) do
-            if (node.settings.direction == modData.constants.nodeDirection.send) then
-              channel.senderNodes = channel.senderNodes or {}
-              channel.senderNodes[node.id] = node
-            else
-              channel.receiverNodes = channel.receiverNodes or {}
-              channel.receiverNodes[node.id] = node
-            end
-          end
+  -- if (not dataMigrated) then
+  --   for _, bus in pairs(modData.persisted.busses) do
+  --     for _, channel in pairs(bus.channels) do
+  --       if (channel.nodes) then
+  --         for _, node in pairs(channel.nodes) do
+  --           if (node.settings.direction == modData.constants.nodeDirection.send) then
+  --             channel.senderNodes = channel.senderNodes or {}
+  --             channel.senderNodes[node.id] = node
+  --           else
+  --             channel.receiverNodes = channel.receiverNodes or {}
+  --             channel.receiverNodes[node.id] = node
+  --           end
+  --         end
   
-          channel.nodes = {}
-        end
-      end
-    end
+  --         channel.nodes = {}
+  --       end
+  --     end
+  --   end
   
 
-    dataMigrated = true
-  end
+  --   dataMigrated = true
+  -- end
   -- END_TEMP
 
 
-  
-  --global.wireless_circuit_bus_data = {}
-  -- if (next(modData.persisted) == nil) then
-  --   AddPersistentDefaultValues(modData.persisted)
+  -- <MO_DATA_RESET> activate this block if mod data shall be reset (when data structures changed) => ALL PREVIOUS DATA LOST
+  -- for key, _ in pairs (global.wireless_circuit_bus_data) do
+  --   global.wireless_circuit_bus_data[key] = nil
   -- end
+  -- AddPersistentDefaultValues(modData.persisted)
+  -- </MOD_DATA_RESET>
 
   local tick = event.tick
 
@@ -221,6 +214,9 @@ local function OnBlueprintSetup(event)
     blueprint = player.cursor_stack
   end
   local bpe = blueprint.get_blueprint_entities()
+  if (not bpe) then
+    return
+  end
   for _, entity in ipairs(bpe) do
     if (entity.name == "bus-node") then
       local orig = player.surface.find_entity("bus-node", entity.position)
@@ -313,6 +309,7 @@ script.on_event(defines.events.on_tick, OnTick)
 script.on_event(defines.events.on_gui_opened, gui.HandleOnGuiOpened)
 script.on_event(defines.events.on_gui_click, gui.HandleOnGuiClick)
 script.on_event(defines.events.on_gui_selection_state_changed, gui.HandleOnGuiSelectionStateChanged)
+script.on_event(defines.events.on_gui_text_changed, gui.HandleOnGuiTextChanged)
 script.on_event(defines.events.on_entity_cloned, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_player_mined_entity, OnEntityRemoved)
 script.on_event(defines.events.on_robot_mined_entity, OnEntityRemoved)

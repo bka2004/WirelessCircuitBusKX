@@ -8,6 +8,7 @@ local function BussesGui(modData)
         guiElementNames =
         {
           busAddButton = modData.constants.modPrefix .. "BusAddButton",
+          busRenameButton = modData.constants.modPrefix .. "BusRenameButton",
           busRemoveButton = modData.constants.modPrefix .. "BusRemoveButton",
           newBusTextfield = modData.constants.modPrefix .. "NewBusTextfield",
           chooseChannelSetDropDown = modData.constants.modPrefix .. "ChooseChannelSetDropDown",
@@ -47,7 +48,40 @@ local function BussesGui(modData)
       
         return true
       end
+ 
       
+      function self.HandleBusRenameButton(event)
+        if (event.element.name ~= self.guiElementNames.busRenameButton) then
+          return false
+        end
+
+        local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
+        local busTextfield = tools.RetrieveGuiElement("busses", self.guiElementNames.newBusTextfield)
+
+        local oldBusName = tools.KeyFromDisplayString(busList.get_item(busList.selected_index))
+        local newBusName = busTextfield.text
+
+        self.RenameBus(oldBusName, newBusName)
+
+        self.UpdateBusList()
+      
+        return true
+      end
+
+
+      function self.HandleBusSelected(event)
+        if (event.element.name ~= self.guiElementNames.busListBox) then
+          return false
+        end
+
+        local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
+        local busTextfield = tools.RetrieveGuiElement("busses", self.guiElementNames.newBusTextfield)
+
+        busTextfield.text = tools.KeyFromDisplayString(busList.get_item(busList.selected_index))
+     
+        return true
+      end
+
 
       function self.HandleBusRemoveButton(event)
         if (event.element.name ~= self.guiElementNames.busRemoveButton) then
@@ -71,7 +105,7 @@ local function BussesGui(modData)
 
     function self.UpdateBusList()
         local busList = tools.RetrieveGuiElement("busses", self.guiElementNames.busListBox)
-        busList.items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)
+        busList.items = tools.BussesAsLocalizedStringListSorted(modData.persisted.busses, modData.persisted.channelSets)
     end 
 
       
@@ -83,6 +117,7 @@ local function BussesGui(modData)
         flow.add{type = "label", caption = {"ConfigGui.ChannelSetLabel"}}
         tools.CreateAndRememberGuiElement("busses", flow, {type = "drop-down", name = self.guiElementNames.chooseChannelSetDropDown, items = tools.ChannelSetsAsLocalizedStringList(modData.persisted.channelSets)})
         tools.CreateAndRememberGuiElement("busses", flow, {type = "button", name = self.guiElementNames.busAddButton, caption = {"ConfigGui.Add"}})
+        tools.CreateAndRememberGuiElement("busses", flow, {type = "button", name = self.guiElementNames.busRenameButton, caption = {"ConfigGui.Rename"}})
 
     end
       
@@ -90,10 +125,11 @@ local function BussesGui(modData)
     function self.AddBusListToBussesGui(parent)
 
         local outerFlow = parent.add{type = "flow", direction = "horizontal"}
-        tools.CreateAndRememberGuiElement("busses", outerFlow, {type = "list-box", name = self.guiElementNames.busListBox, items = tools.BussesAsLocalizedStringList(modData.persisted.busses, modData.persisted.channelSets)})
+        tools.CreateAndRememberGuiElement("busses", outerFlow, {type = "list-box", name = self.guiElementNames.busListBox })
         local innerFlow = outerFlow.add{type = "flow", direction = "vertical"}
         innerFlow.add{type = "button", name = self.guiElementNames.busRemoveButton, caption = {"ConfigGui.Remove"}}
 
+        self.UpdateBusList()
     end
       
 
@@ -112,9 +148,36 @@ local function BussesGui(modData)
     end
 
 
+    function self.RenameBus(oldName, newName)
+      local bus = modData.persisted.busses[oldName]
+      if not bus then
+        return
+      end
+
+      bus.name = newName
+      modData.persisted.busses[oldName] = nil
+      modData.persisted.busses[newName] = bus
+
+      self.UpdatedAffectedNodes(oldName, newName)
+    end
+
+
+    function self.UpdatedAffectedNodes(oldName, newName)
+
+      for nodeId, node in pairs(modData.persisted.nodesById) do
+        if (node.settings.busName == oldName) then
+          node.settings.busName = newName
+        end
+      end
+
+      
+    end
+
+
     function self.HandleOnGuiSelectionStateChanged(event)
 
         tools.CallEventHandler(event, {
+          self.HandleBusSelected
         })
 
     end
@@ -124,6 +187,7 @@ local function BussesGui(modData)
 
         return tools.CallEventHandler(event, {
             self.HandleBusAddButton,
+            self.HandleBusRenameButton,
             self.HandleBusRemoveButton
         })
         
