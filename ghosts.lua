@@ -53,7 +53,11 @@ local function Ghosts(modData)
 
 
     function self.UpdateBusOfPendingGhost(ghostPosition, busName)
-        for _, currentPendingGhost in ipairs(modData.persisted.pendingGhosts) do
+        local pendingGhosts = self.GetPendingGhostsArray()
+        if (not pendingGhosts) then
+            return
+        end
+        for _, currentPendingGhost in pairs(pendingGhosts) do
             if (tools.PositionsAreEqual(currentPendingGhost.position, ghostPosition)) then
                 currentPendingGhost.settings.busName = busName
                 return
