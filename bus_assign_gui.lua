@@ -122,7 +122,7 @@ local function BusAssignGui(modData, ghosts)
           return
         end
 
-        tools.SaveGuiPosition(frame.location, playerId, "config")
+        tools.SaveGuiPosition(frame.location, playerId, "busAssign")
 
         localBusMappings = {}
         localSelectedNodes = {}
@@ -187,18 +187,18 @@ local function BusAssignGui(modData, ghosts)
     end
 
 
-    function self.GetBussesWithSameChannelSetAs(busName)
+    function self.GetBussesWithSameChannelSetAs(origBusName)
 
-        local origBus = modData.persisted.busses[busName]
+        local origBus = modData.persisted.busses[origBusName]
         if (not origBus) then
             return {}
         end
 
-        local channetSetToMatch = origBus.channelSet
+        local channelSetToMatch = origBus.channelSet
 
         local result = {}
         for busName, bus in pairs(modData.persisted.busses) do
-            if (bus.channelSet == channetSetToMatch) then
+            if (bus.channelSet == channelSetToMatch) then
                 result[busName] = bus
             end
         end
@@ -217,7 +217,7 @@ local function BusAssignGui(modData, ghosts)
 
         newRadioButton.state = newBusInfo.type == "new"
         existingRadioButton.state = newBusInfo.type == "existing"
-        self.UpdateExistingBusses()
+        self.UpdateExistingBusses(oldBusName)
 
         if (newRadioButton.state) then
             existingBusDropdown.selected_index = 0
@@ -229,7 +229,7 @@ local function BusAssignGui(modData, ghosts)
     end
 
 
-    function self.UpdateExistingBusses()
+    function self.UpdateExistingBusses(oldBusName)
 
         local existingBusDropdown = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusDropdown)
         local strictChannelSetCheckbox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusStrictChannelSet)
@@ -367,9 +367,7 @@ local function BusAssignGui(modData, ghosts)
             return false
         end
 
-        local strictChannelSetCheckbox = tools.RetrieveGuiElement("busAssign", self.guiElementNames.existingBusStrictChannelSet)
-
-        self.UpdateExistingBusses()
+        self.UpdateExistingBusses(self.GetOldBusNameOfSelectedMapping())
 
         return true
 
