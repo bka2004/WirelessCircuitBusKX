@@ -52,7 +52,11 @@ local function BusAssignGui(modData, ghosts)
         local displayList = {}
 
         for oldBus, newBusInfo in pairs(localBusMappings) do
-            displayList[#displayList+1] = tools.GetBusNameDisplayString(oldBus) .. " -> " .. tools.GetBusNameDisplayString(newBusInfo.name) .. " [" .. newBusInfo.type .. "]"
+            if (newBusInfo.type == "invalid_old_bus_not_found") then
+                displayList[#displayList+1] = tools.GetBusNameDisplayString(oldBus) .. " -> [INVALID: old bus is unknown, need channelset]"
+            else
+                displayList[#displayList+1] = tools.GetBusNameDisplayString(oldBus) .. " -> " .. tools.GetBusNameDisplayString(newBusInfo.name) .. " [" .. newBusInfo.type .. "]"
+            end
         end
 
         return displayList
@@ -136,7 +140,11 @@ local function BusAssignGui(modData, ghosts)
     function self.Show(player, busMappings, selectedNodes)
 
         for oldBus, newBus in pairs(busMappings) do
-            localBusMappings[oldBus] = { type = "new", name = newBus }
+            if (modData.persisted.busses[oldBus]) then
+                localBusMappings[oldBus] = { type = "new", name = newBus }
+            else
+                localBusMappings[oldBus] = { type = "invalid_old_bus_not_found", name = "invalid" }
+            end
         end
         localSelectedNodes = selectedNodes
 
@@ -161,8 +169,10 @@ local function BusAssignGui(modData, ghosts)
 
         for oldBus, newBusInfo in pairs(localBusMappings) do
             if (newBusInfo.type == "new") then
-                local channelSet = modData.persisted.busses[oldBus].channelSet
-                modData.persisted.busses[newBusInfo.name] = factories.CreateBusWithChannelSet(newBusInfo.name, channelSet)
+                local oldBus = modData.persisted.busses[oldBus]
+                if (oldBus) then
+                    modData.persisted.busses[newBusInfo.name] = factories.CreateBusWithChannelSet(newBusInfo.name, oldBus.channelSet)
+                end
             end
         end
 
@@ -176,8 +186,11 @@ local function BusAssignGui(modData, ghosts)
         for _, entity in pairs(localSelectedNodes) do
             if (entity.type ~= "entity-ghost") then
                 local node = modData.persisted.nodesById[entity.unit_number]
-                node.settings.busName = localBusMappings[node.settings.busName].name
-                nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(node)
+
+                if (localBusMappings[node.settings.busName].type ~= "invalid_old_bus_not_found") then
+                    node.settings.busName = localBusMappings[node.settings.busName].name
+                    nodeStorage.SortNodeIntoStorageAccourdingToItsSettings(node)
+                end
             else
                 local ghostSettings = entity.tags and entity.tags.sourceBusNodeSettings or nil
 

@@ -47,68 +47,6 @@ local modData =
 local tools = Tools(modData)
 local factories = Factories(modData)
 local nodeStorage = NodeStorage(modData)
-
--- modData.tools =
--- {
---   registerNode = function (entityId, entity)
-
---     modData.persisted.nodes[entityId] = factories.CreateBusNodeData(entity)
-  
---   end
--- }
-  
--- modData.tools.registerNodeWithSettings = function(entityId, entity, settings)
-
---   modData.persisted.nodes[entityId] = factories.CreateBusNodeDataWithSettings(entity, settings)
-
--- end
-
--- modData.tools.getBusNode = function(nodeId)
-
---   return modData.persisted.nodes[nodeId]
-
--- end
-
--- modData.tools.getOrCreatePlayerSettings = function(playerId)
-
---   local playerSettings = modData.persisted.playerSettings[playerId]
---   if (playerSettings) then
---     return playerSettings
---   end
-
---   modData.persisted.playerSettings[playerId] = factories.CreatePlayerData(playerId)
-
---   return modData.persisted.playerSettings[playerId]
-
--- end
-
-  -- modData.tools.getNodeSettings = function(nodeId)
-  --   local node = modData.persisted.nodes[nodeId]
-
-  --   if (not node) then
-  --     return nil
-  --   end
-
-  --   return tools.deepTableCopy(node.settings)
-
-  -- end
-
-  -- modData.tools.setNodeSettings = function(nodeId, settings)
-  --   local node = modData.persisted.nodes[nodeId]
-
-  --   if (not node) then
-  --     return
-  --   end
-
-  --   modData.persisted.nodes[nodeId].settings = settings
-
-  -- end
-
-
-
-
-
-
 local ghosts = Ghosts(modData)
 local gui = Gui(modData, ghosts)
 local bus = Bus(modData)
@@ -217,6 +155,18 @@ local function OnBlueprintSetup(event)
   if (not bpe) then
     return
   end
+
+  for _, entity in ipairs(bpe) do
+    if (entity.name == "bus-node") then
+        local controlBehavior = entity.control_behavior
+        if (controlBehavior) then
+          controlBehavior.filters = {} -- we don't want any signals in the blueprint that come from the original
+        end
+    end
+  end
+
+  blueprint.set_blueprint_entities(bpe)
+
   for _, entity in ipairs(bpe) do
     if (entity.name == "bus-node") then
       local orig = player.surface.find_entity("bus-node", entity.position)
@@ -228,20 +178,12 @@ local function OnBlueprintSetup(event)
 end
 
 
+
 local function OnEntityCreatedByPlacing(event)
 
   local createdEntity = event.created_entity
 
   if (createdEntity.name == "entity-ghost" and createdEntity.ghost_name == "bus-node") then
-
-    -- local player = game.players[event.player_index]
-    -- for key, value in pairs(modData.minedEntityCache) do
-    --   player.print("cache_x:" .. key.x)
-    --   player.print("cache_y:" .. key.y)
-    -- end
-
-    -- player.print("created_x:" .. createdEntity.position.x)
-    -- player.print("created_y:" .. createdEntity.position.y)
 
     local minedEntity = modData.minedEntityCache[createdEntity.position.x] and modData.minedEntityCache[createdEntity.position.x][createdEntity.position.y]
     if (minedEntity) then
@@ -259,7 +201,6 @@ local function OnEntityCreatedByPlacing(event)
 
   local newNodeId = createdEntity.unit_number
   nodeStorage.StoreNewNode(factories.CreateNode(newNodeId, createdEntity), newNodeId)
-  --modData.tools.registerNode(createdEntity.unit_number, createdEntity)
 
 end
 
@@ -275,8 +216,6 @@ local function OnEntityRemoved(event)
     modData.minedEntityCache[removedEntity.position.x][removedEntity.position.y] = modData.persisted.nodesById[removedEntity.unit_number]
 
     nodeStorage.RemoveNode(removedEntity.unit_number)
-
-    --modData.persisted.nodes[removedEntity.unit_number] = nil
   end
 
 end
@@ -293,12 +232,7 @@ local function OnSettingsPasted(event)
 
   local destinationNode = nodeStorage.GetNode(destId)
   destinationNode.settings = nodeStorage.GetCopyOfSettingsFor(sourceId)
-  --modData.tools.setNodeSettings(destId, modData.tools.getNodeSettings(sourceId))
 
-end
-
-local function EventTest(event)
-  local x = "y"
 end
 
 
@@ -318,9 +252,5 @@ script.on_event(defines.events.on_robot_built_entity, OnEntityCreatedByPlacing)
 script.on_event(defines.events.on_entity_settings_pasted, OnSettingsPasted)
 script.on_event(defines.events.on_player_setup_blueprint, OnBlueprintSetup)
 script.on_event(defines.events.on_player_selected_area, selectionTool.OnSelection)
-script.on_event(defines.events.on_pre_player_removed, EventTest)
-script.on_event(defines.events.on_pre_player_left_game, EventTest)
-script.on_event(defines.events.on_player_removed, EventTest)
-script.on_event(defines.events.on_player_left_game, EventTest)
 
 

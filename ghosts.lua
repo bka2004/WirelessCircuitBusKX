@@ -78,8 +78,11 @@ local function Ghosts(modData)
             if (entityAtPosition) then
 
                 local newNodeId = entityAtPosition.unit_number
-                nodeStorage.StoreNewNodeWithSettings(factories.CreateNode(newNodeId, entityAtPosition), newNodeId, ghost_data.settings)
-
+                if (ghost_data.settings) then
+                    nodeStorage.StoreNewNodeWithSettings(factories.CreateNode(newNodeId, entityAtPosition), newNodeId, ghost_data.settings)
+                else
+                    nodeStorage.StoreNewNode(factories.CreateNode(newNodeId, entityAtPosition), newNodeId)
+                end
                 self.RemovePendingGhostAtPosition(i)
 
             end

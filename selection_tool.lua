@@ -37,22 +37,6 @@ local function SelectionTool(modData, gui)
     end
 
 
-    -- function self.GetHighestNumericIndexForPrefix(busNamePrefix)
-
-    --     local highestIndex = 0
-
-    --     for busName, _ in pairs(modData.persisted.busses) do
-    --         local curPrefix, curIndex = self.GetPrefixAndNumericIndex(busName)
-    --         if (curPrefix == busNamePrefix and curIndex > highestIndex) then
-    --             highestIndex = curIndex
-    --         end
-    --     end
-
-    --     return highestIndex
-
-    -- end
-
-
     function self.CalculateDefaultMappings(busses)
 
         local highestSeenIndexByPrefix = {}
